@@ -1,0 +1,110 @@
+.jimu-widget-demo div:first-child {
+	color: red;
+}
+
+.feedbackStatusButton, .reassignButton {
+	cursor: pointer;
+	font-weight:bold;
+	background-color:#EFEFF3;
+	background-image:none;
+	border:1px solid #DDD;
+	width: 40%;
+	margin: 4px;
+	margin-left: 8px;
+	height: 32px;
+	float: left;
+	padding: 0 5px;
+}
+
+.statusImg {
+	width:30px;
+	float:left;
+	margin-right: 5px;
+	margin-top:3px;
+	line-height: 0;
+}
+
+.statusText {
+	line-height: 10px;
+}
+
+.statusText p {
+	width:65px;
+	margin-left:15px;
+	font-size: 10px;
+	height: 33px;
+	display: table-cell;
+	vertical-align: middle;
+	text-align: center;
+}
+
+.mblButton, .mblToggleButton, .mblToggleButtonSelected.Selected {
+	font-weight:bold;
+	background-color:#EFEFF3;
+	background-image:none;
+	border:1px solid #DDD;
+	text-align: center;
+	color: black;
+}
+
+.buttons {
+	padding: 0 !important;
+	text-align: right;
+}
+
+.simplePane {
+	width: 280px;
+	overflow-x: hidden;
+}
+
+/* Template Picker Overrides */
+.templatePicker .grid .dojoxGridRow {
+	display: none;
+}
+
+.templatePicker .grid .dojoxGridRowOdd {
+	background-color: #FFFFFF;
+	display: block;
+	float: left;
+	width: 30%;
+}
+
+.templatePicker .dojoxGrid .dojoxGridCell {
+	width: 7em !important;
+}
+
+.templatePicker .dojoxGrid {
+	padding-left:	8%;
+}
+
+.feedbackTitle {
+	font-size: 16px;
+	font-weight: bold;
+}
+/* hack colors... */
+.claro .dijitSelectDisabled, .claro .dijitTextBoxDisabled, .claro .dijitTextBoxDisabled .dijitInputContainer {
+	background-color: #FFF !important;
+}
+
+.dj_webkit .claro .dijitDisabled input {
+	color: black !important;
+}
+
+.esriPopup .contentPane {
+	/*max-width: 280px !important;*/
+	max-height: 700px !important;
+}
+
+#divControl > *
+{
+  float: left;
+}
+.commentPane {
+	padding: 0px !important;
+}
+.commentButtons {
+	float: right;
+}
+.commentButton {
+	margin: 2px;
+}
