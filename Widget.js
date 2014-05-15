@@ -104,7 +104,6 @@ define(
         this.inherited(arguments);
         console.log('postCreate');
 
-
         //console.log(this.appConfig.httpProxy);
         $(this.logoNode).attr('src', this.folderUrl + 'images/CommunityMapsLogo.png');
 
@@ -140,7 +139,7 @@ define(
         query.outSR = '';
         query.outFields = [this.config.contributorBoundariesFields.data_source, this.config.contributorBoundariesFields.alias];
         var queryTask = new QueryTask(URL.toFullURL(this.config.contributorBoundaries));
-        t = this;
+        var t = this;
         var assignmentCommunities = [];
 
         //var loadingIndicator = new mProgress({ size: 12, center: false, startSpinning: true });
@@ -933,8 +932,8 @@ define(
             "id": "commentPane"
           }, $(".commentDiv")[0]);
           domConstruct.create("label", {
-              "for": "fbComment",
-              "innerHTML": this.nls.feedbackComment
+            "for": "fbComment",
+            "innerHTML": this.nls.feedbackComment
           }, registry.byId("commentPane").domNode);
           domConstruct.create("br", null, registry.byId("commentPane").domNode);
           new mTextArea({
@@ -983,10 +982,10 @@ define(
 
         } else {
 
-            domStyle.set(buttonsDiv, 'display', 'none');
-            domStyle.set($(".commentDiv")[0], 'display', 'block');
-            registry.byId("fbComment").reset();
-            registry.byId("fbComment").focus();
+          domStyle.set(buttonsDiv, 'display', 'none');
+          domStyle.set($(".commentDiv")[0], 'display', 'block');
+          registry.byId("fbComment").reset();
+          registry.byId("fbComment").focus();
 
         }
 
