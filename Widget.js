@@ -103,6 +103,7 @@ define(
 
         this.inherited(arguments);
         console.log('postCreate');
+        // cam's changes
         //console.log(this.appConfig.httpProxy);
         $(this.logoNode).attr('src', this.folderUrl + 'images/CommunityMapsLogo.png');
 
