@@ -32,11 +32,18 @@ define(
     "esri/tasks/PrintTemplate",
 
     "dojox/gfx",
+    "dojox/lang/functional",
     "dojox/mobile/TextArea",
     "dijit/Dialog",
     "dijit/layout/ContentPane",
     "dijit/form/Button",
-    "dijit/form/HorizontalSlider"
+    "dijit/form/HorizontalSlider",
+    "dijit/form/ComboBox",
+    "dojox/mobile/ComboBox",
+    "dojo/data/ItemFileReadStore",
+    "dojo/store/Memory",
+    "esri/geometry/Extent",
+    "esri/SpatialReference"
 
   ], function(
 
@@ -71,11 +78,18 @@ define(
     PrintTemplate,
 
     Gfx,
+    functional,
     mTextArea,
     Dialog,
     ContentPane,
     Button,
-    HorizontalSlider
+    HorizontalSlider,
+    ComboBoxDesktop,
+    ComboBox,
+    ItemFileReadStore,
+    Memory,
+    Extent,
+    SpatialReference
 
   ) {
 
@@ -365,9 +379,6 @@ define(
 
       },
 
-      toggleAllFeedback: function() {
-
-      },
 
       submitConversation: function() {
 
@@ -626,6 +637,8 @@ define(
           }
         }, "imagerySlider").startup();
 
+        this.getGeocodeExtents();
+
         /*
         console.log(this.editor.attributeInspector);
 
@@ -636,6 +649,191 @@ define(
         //console.log(this.editor);
 
       },
+
+
+      populateCommunities: function() {
+
+
+        this.extentName = [];
+        if (this.extents) {
+
+          ///Desktop
+          this.extentName = [];
+          var ctr = 0;
+          for (var k in this.extents) {
+            this.extentName.push({
+              'name': k,
+              id: ctr.toString()
+            });
+            ctr++;
+          }
+          var dataItems = {
+            identifier: 'name',
+            label: 'name',
+            items: this.extentName
+          };
+
+          var store = new ItemFileReadStore({
+            data: dataItems
+          });
+          store.comparatorMap = {};
+
+          store.comparatorMap['name'] = function(a, b) {
+            if (a < b) return -1;
+            if (a > b) return 1;
+            return 0;
+          };
+
+          function completed(items, findResult) {
+
+            var sortedStore = new Memory({
+              idProperty: "selector",
+              data: items
+            });
+            //if (!t.deviceInfo.isMobile() && !t.deviceInfo.isTablet())
+            //{
+            var _this = this;
+            var comboBox = new ComboBoxDesktop({
+              id: "communitySelector",
+              name: "communitySelector",
+              selectOnClick: true,
+              placeHolder: "Select Community",
+              store: sortedStore,
+              value: "",
+              onChange: function(location) {
+                if (location == "") {
+                  location = "Canada";
+                  dijit.byId(this.id).set("value", location);
+                }
+                _this.onChangeCommunity(location);
+              },
+              selectOnClick: true,
+              searchAttr: "name"
+            }, "communitySelector");
+            /*}
+                    else
+                    {
+                        var comboBox = new dojox.mobile.ComboBox({
+                            store: sortedStore,
+                            readonly:true,
+                            placeHolder: "Select Community",
+                            value: "",
+                            onChange: lang.hitch(this,function(location)
+                            {
+                                if (location == "") {
+                                    location = "Canada";
+                                    dijit.byId(this.id).set("value", location);
+                                }
+                                this.onChangeCommunity(location);
+                            }),
+                            value: ''
+                        }, id);
+                    }
+          */
+          }
+
+          function error(errData, request) {
+            console.log("Failed in sorting data.");
+          }
+
+          var sortAttributes = [{
+            attribute: "name",
+            ascending: true
+          }];
+
+          store.fetch({
+            onComplete: lang.hitch(this, completed),
+            onError: lang.hitch(this, error),
+            sort: sortAttributes
+          });
+
+        } else {
+          console.log("problem");
+        }
+      },
+
+
+      getGeocodeExtents: function() {
+        var qt = new QueryTask("http://gfx.esri.ca/arcgis/rest/services/Communities/Contributors/FeatureServer/1");
+        var qp = lang.mixin(new Query(), {
+          returnGeometry: false,
+          where: "1=1",
+          outFields: ["x_min",
+                      "y_min",
+                      "x_max",
+                      "y_max",
+                      "name_common",
+                      "name_official"]
+        });
+
+        functional.forIn(this.config.contributorDataFields, function(f) {
+          qp.outFields.push(f);
+        });
+
+        var req = qt.execute(qp);
+        var extent = [];
+        req.then(lang.hitch(this, function(results) {
+          if (results && results.features && results.features.length > 0) {
+
+            array.forEach(results.features, lang.hitch(this, function(f, i) {
+              extent[f.attributes["name_common"]] = {
+                "data_source": f.attributes["name_official"],
+                "extent": {
+                  "xmin": f.attributes["x_min"],
+                  "xmax": f.attributes["x_max"],
+                  "ymin": f.attributes["y_min"],
+                  "ymax": f.attributes["y_max"]
+                }
+              };
+            }));
+            if (extent.Canada) {
+              extent.Canada.extent.xmin = -136;
+              extent.Canada.extent.xmax = -45;
+              extent.Canada.extent.ymin = 52;
+              extent.Canada.extent.ymax = 65;
+            }
+            this.extents = extent;
+            this.populateCommunities();
+
+          } else {
+            console.log("error getting extents");
+          }
+
+        }));
+
+      },
+
+      onChangeCommunity: function(location) {
+        this.changeExtent(location);
+      },
+
+      //get the data source name based on alias
+      getDataSourceName: function(alias) {
+        if (alias in this.extents) {
+          return this.extents[alias].data_source;
+        } else
+          return "CanVec";
+      },
+
+      //get the alias based on data source name
+      getAlias: function(contributor) {
+        for (var i in this.extents) {
+          if (this.extents[i].data_source == contributor) {
+            return i;
+          }
+        }
+        return "Canada";
+      },
+
+      changeExtent: function(community) {
+        var extentObj = this.extents[community];
+        var extent = new Extent(extentObj.extent.xmin, extentObj.extent.ymin, extentObj.extent.xmax, extentObj.extent.ymax, new SpatialReference({
+          wkid: 4326
+        }));
+        this.map.setExtent(extent, true);
+      },
+
+
 
 
       changeOpacity: function(op) {
