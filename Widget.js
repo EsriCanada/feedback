@@ -356,6 +356,10 @@ define(
           this.toggleFeedbackLayersVisibility(true);
         }
 
+        if (this.attributeTable) {
+          this.widgetManager.openWidget(this.attributeTable);
+        }
+
       },
 
       onClose: function() {
@@ -364,7 +368,6 @@ define(
         this.toggleFeedbackLayersVisibility(false);
         if (this.attributeTable) {
           this.widgetManager.closeWidget(this.attributeTable);
-
         }
 
       },
@@ -991,7 +994,9 @@ define(
 
       },
 
-
+      attributeTableClosed: function(){
+        console.log("remove");
+      },
 
       toggleAttribute: function() {
 
@@ -1029,6 +1034,9 @@ define(
 
               html.place(widget.domNode, jimuConfig.mainPageId);
               widget.startup();
+              widget.on("close", lang.hitch(this, this.attributeTableClosed));
+              widget.on("hide", lang.hitch(this, this.attributeTableClosed));
+              widget.on("minimize", lang.hitch(this, this.attributeTableClosed));
             }));
           }
         } else {
