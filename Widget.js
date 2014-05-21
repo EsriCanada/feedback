@@ -24,7 +24,9 @@ define(
     "esri/dijit/editing/Editor",
     "esri/dijit/editing/TemplatePicker",
     "esri/dijit/PopupTemplate",
+    "esri/dijit/Popup",
     "esri/layers/FeatureLayer",
+    "esri/layers/ArcGISTiledMapServiceLayer",
     "esri/tasks/query",
     "esri/tasks/QueryTask",
     "esri/tasks/PrintTask",
@@ -70,7 +72,9 @@ define(
     Editor,
     TemplatePicker,
     PopupTemplate,
+    Popup,
     FeatureLayer,
+    ArcGISTiledMapServiceLayer,
     Query,
     QueryTask,
     PrintTask,
@@ -118,6 +122,10 @@ define(
         this.inherited(arguments);
         console.log('postCreate');
 
+         // Changes
+        var popup = new Popup(null, domConstruct.create("div"));
+        this.map.setInfoWindow(popup);
+
         //console.log(this.appConfig.httpProxy);
         $(this.logoNode).attr('src', this.folderUrl + 'images/CommunityMapsLogo.png');
 
@@ -128,6 +136,8 @@ define(
           }
           if (this.attributeInspectorIsHydrated === false) {
             this.editor.attributeInspector.on("next", lang.hitch(this, function(evt) {
+
+              // var rinkwatchTemplate = new InfoTemplate(i18n.popup.title, popup.popupTemplate);
               console.log(evt);
               this.dealWithSelectedFeature();
             }));
@@ -174,11 +184,11 @@ define(
             }
             SelectBox.createSelectBox(config, "reassignFeedback", assignmentCommunities, "Choose new community", onChange);
           } else {
-            dojo.byId("reassignFeedback").value = "No intersecting communitites";
+            dom.byId("reassignFeedback").value = "No intersecting communitites";
           }
           loadingIndicator.stop();
         }, function(data) {
-          console.log(data)
+          console.log(data);
         });
 
       },
@@ -196,7 +206,7 @@ define(
         var commentDiv = domConstruct.create("div", {
           "class": "commentDiv"
         }, atiButtonsDiv);
-        if (this.agolUser.isAdmin == 1) {
+        if (this.agolUser.isAdmin === true) {
           this.showFeedbackButtons(buttonsDiv);
         }
         //this.map.centerAt(this.editor.attributeInspector._currentFeature.geometry);
@@ -223,7 +233,7 @@ define(
 
         if (this.map.layerIds.length < 2) {
           var url = "http://server.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer";
-          this.imagery = new esri.layers.ArcGISTiledMapServiceLayer(url, {
+          this.imagery = new ArcGISTiledMapServiceLayer(url, {
             opacity: 0,
             visible: true
           });
@@ -390,6 +400,9 @@ define(
           url: this.config.feedbackUrl + "/EngageFeedback?username=" + credential.userId + "&access_token=" + credential.token,
           handleAs: "json"
         });
+
+        // edit JSON to change to custom HTML
+        // use customField': "<b>info</b>" to override attribute inspector
         engageFeedbackHandle.then(lang.hitch(this, this.engageFeedbackHandleSucceeded), lang.hitch(this, this.engageFeedbackHandleFailed));
 
       },
@@ -397,6 +410,8 @@ define(
       engageFeedbackHandleSucceeded: function(response, io) {
 
         this.agolUser = response;
+        // this.addCustomField(this.agolUser);
+
         console.log(this.agolUser);
 
         if (response.isAuthenticated === true && response.isMember) {
@@ -439,6 +454,22 @@ define(
       engageFeedbackHandleFailed: function(response, io) {
 
         console.log(response);
+
+      },
+
+      addCustomField: function(response) {
+
+        var d = new Deferred();
+
+        array.forEach(response.layerInfos, lang.hitch(this, function(layer) {
+          array.forEach(layer.fieldInfos, lang.hitch(this, function(fi) {
+            fi.customField = "<b>  Custom Field Test</b>";
+          }));
+        }));
+
+        d.resolve(response);
+
+        return d.promise;
 
       },
 
@@ -583,6 +614,7 @@ define(
 
         settings.layerInfos = this.agolUser.layerInfos;
 
+        // use customField': "<b> this div</b>" to override attribute inspector
 
         settings.map = this.map;
         settings.toolbarVisible = false;
@@ -703,7 +735,7 @@ define(
               onChange: function(location) {
                 if (location == "") {
                   location = "Canada";
-                  dijit.byId(this.id).set("value", location);
+                  registry.byId(this.id).set("value", location);
                 }
                 _this.onChangeCommunity(location);
               },
@@ -722,7 +754,7 @@ define(
                             {
                                 if (location == "") {
                                     location = "Canada";
-                                    dijit.byId(this.id).set("value", location);
+                                    registry.byId(this.id).set("value", location);
                                 }
                                 this.onChangeCommunity(location);
                             }),
@@ -1109,14 +1141,27 @@ define(
           }
         }));
         // Destroy buttons on close
-        var od = this.map.infoWindow.on("hide", function() {
-          oc.remove();
+        var od = this.map.infoWindow.on("hide", lang.hitch(this, function() {
+          if (oc) {
+            oc.remove();
+          }
           od.remove();
           $(".feedbackStatusButton", buttonsDiv).forEach(domConstruct.destroy);
           if (registry.byId('commentPane')) {
             registry.byId('commentPane').destroyRecursive();
           }
-        });
+        }));
+        // Destroy buttons on change
+        var ac = this.editor.attributeInspector.on("next", lang.hitch(this, function(evt) {
+          if (oc) {
+            oc.remove();
+          }
+          ac.remove();
+          $(".feedbackStatusButton", buttonsDiv).forEach(domConstruct.destroy);
+          if (registry.byId('commentPane')) {
+            registry.byId('commentPane').destroyRecursive();
+          }
+        }));
 
       },
 
