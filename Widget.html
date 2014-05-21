@@ -1,22 +1,26 @@
 <div>
-	<!--<div>${nls.label1}.</div>
-	<div>${nls.label2}.[${config.configText}]</div>
+  <!--<div>${nls.label1}.</div>
+  <div>${nls.label2}.[${config.configText}]</div>
   <div data-dojo-attach-point="mapIdNode"></div>-->
 
   <div id="logoPanel" style="text-align: center">
-   	<img data-dojo-attach-point="logoNode"><br />
+    <img data-dojo-attach-point="logoNode"><br />
   </div>
 
   <div id="groupInvitePanel" style="display: none; padding: 5px; text-align: center;">
-  	<!--<p>The GFX would like to invite your to join it's Feedback Community.</p>-->
-  	<p><span id="userId"></span><span id="userMessage">${nls.gfxGroupInvite}</span></p>
+    <!--<p>The GFX would like to invite your to join it's Feedback Community.</p>-->
+    <p><span id="userId"></span><span id="userMessage">${nls.gfxGroupInvite}</span></p>
 
-   	<input id="acceptInvite" type="button" value="Accept" data-dojo-attach-event="click:acceptInvite" />
-  	<input id="declineInvite" type="button" value="Decline" data-dojo-attach-event="click:declineInvite" />
+    <input id="acceptInvite" type="button" value="Accept" data-dojo-attach-event="click:acceptInvite" />
+    <input id="declineInvite" type="button" value="Decline" data-dojo-attach-event="click:declineInvite" />
     <!--<a href="javascript:void(0);" onclick="signIn();">Sign In</a> and view your ArcGIS Online items.-->
   </div>
-
-
+  <div id = "imageryControl">
+    <label>Topographic</label>
+    <div id="imagerySlider"></div>
+    <label>Imagery</label>
+  </div>
+  <div id="communitySelector"></div>
   <div class="feedbackTitle">Add Feedback</div>
   <br />
   <div id="editorDiv" data-dojo-attach-point="editDiv" style="width:100%; height:200px">
@@ -26,11 +30,6 @@
   <br />
   <div id="toggleAttribute" style="display: none" data-dojo-attach-point="ChkNode1" data-dojo-type="jimu/dijit/CheckBox" data-dojo-attach-event="click:toggleAttribute">&nbsp;&nbsp;View Attribute Inspector</div>
   <br />
-  <div id = "imageryControl">
-    <label>Topographic</label>
-    <div id="imagerySlider"></div>
-    <label>Imagery</label>
-  </div>
   <div id="conversationDiv"></div>
   <input type="button" id="submitConversation" value="Submit" data-dojo-attach-event="click:submitConversation" style="display: none" />
 </div>

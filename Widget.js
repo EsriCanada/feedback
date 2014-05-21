@@ -144,45 +144,133 @@ define(
 
       },
 
-      findIntersectingCommunities: function(graphic, config) {
+      findIntersectingCommunities: function(graphic) {
 
-        this.initialize(config);
         var query = new Query();
-        query.geometry = graphic._feedbackGraphic.geometry;
+        query.geometry = graphic.geometry;
         query.inSR = '';
         query.outSR = '';
-        query.outFields = [this.config.contributorBoundariesFields.data_source, this.config.contributorBoundariesFields.alias];
-        var queryTask = new QueryTask(URL.toFullURL(this.config.contributorBoundaries));
+        query.outFields = ["gfx_management.sde.DataSource.name_official"];
+        var queryTask = new QueryTask("http://gfx.esri.ca/arcgis/rest/services/Communities/Contributors/MapServer/0");
         var t = this;
         var assignmentCommunities = [];
+
+
 
         //var loadingIndicator = new mProgress({ size: 12, center: false, startSpinning: true });
         //domStyle.set(loadingIndicator.domNode, { "display": "inline-block" });
         //dojo.byId("_reassignDiv").appendChild(loadingIndicator.domNode);
 
+        var _this = this;
+
         queryTask.execute(query, function(featureSet) {
           if (featureSet.features.length > 1) {
             for (var community in featureSet.features) {
-              if (featureSet.features[community].attributes[t.config.contributorBoundariesFields.data_source] != graphic.attributes.mgmt_data_source) {
-                assignmentCommunities.push({
-                  "name": "community"
-                });
+              if (featureSet.features[community].attributes["gfx_management.sde.DataSource.name_official"] != graphic.attributes.mgmt_data_source) {
+                  assignmentCommunities.push({
+                    "name": featureSet.features[community].attributes["gfx_management.sde.DataSource.name_official"]
+                  });
               }
             }
             var onChange = function(data) {
               //console.log(data);
             }
-            SelectBox.createSelectBox(config, "reassignFeedback", assignmentCommunities, "Choose new community", onChange);
-          } else {
-            dojo.byId("reassignFeedback").value = "No intersecting communitites";
-          }
-          loadingIndicator.stop();
-        }, function(data) {
-          console.log(data)
-        });
 
+            var placeholder = "Choose new community";
+            if (assignmentCommunities.length == 0)
+            {
+              placeholder = "No intersecting communities";
+            }
+
+            _this.createSelectBox(false, "intersectingCommunity", assignmentCommunities, placeholder, _this.communityChosen);
+          } else {
+            dom.byId("intersectingCommunity").value = "No communitites";
+          }
+          //loadingIndicator.stop();
+        }, function(data) {
+          console.log(data);
+        });
       },
 
+
+      communityChosen:function(community)
+      {
+        this.communityChange = community;
+      },
+
+
+      createSelectBox: function(mobile, id, data, placeholder, onChangeFunction){
+
+            ///Desktop
+            this.items = [];
+            var ctr = 0;
+
+            for (var k in data)
+            {
+              this.items.push({'name':data[k].name, id:ctr.toString()});
+              ctr++;
+            }
+
+            var dataItems = {
+              identifier: 'name',
+              label: 'name',
+              items: this.items
+            };
+
+            var store = new ItemFileReadStore({ data:dataItems  });
+            store.comparatorMap = {};
+
+            store.comparatorMap['name']=function(a,b){
+                if(a<b) return -1;
+                if(a>b) return 1;
+                return 0;
+            };
+
+
+            var _this = this;
+            function completed(items, findResult)
+            {
+              var sortedStore = new Memory({ idProperty: "selector", data:items  });
+              if (!mobile)
+              {
+
+                this.comboBox = new ComboBoxDesktop({
+                    id: id,
+                    name: id,
+                    placeHolder: placeholder,
+                    store: sortedStore,
+                    onChange: function(data)
+                    {
+                      var p = lang.hitch(_this, onChangeFunction, data);
+                      p();
+                      //onChange(location);
+                    },
+                    searchAttr: "name",
+                    selectOnClick: true
+                }, id);
+              }
+              else
+              {
+                this.comboBox = ComboBox({
+                    store: sortedStore,
+                    readonly:false,
+                    placeHolder: placeholder,
+                    onChange: function(data)
+                    {
+                      //onchange(location);
+                    },
+                  value: ''
+                },id);
+              }
+            }
+
+            function error(errData, request){
+                console.log("Failed in sorting data.");
+            }
+            var sortAttributes = [{attribute: "name", ascending: true}];
+            store.fetch({onComplete: lang.hitch(this, completed), onError: lang.hitch(this, error), sort: sortAttributes});
+
+      },
 
       dealWithSelectedFeature: function() {
 
@@ -229,6 +317,22 @@ define(
           });
           this.map.addLayer(this.imagery, 1);
         }
+
+
+        var t = this;
+        var slider = new HorizontalSlider({
+          name: "slider",
+          value: 0,
+          minimum: 0,
+          maximum: 1,
+          intermediateChanges: true,
+          style: "width:175px;",
+          onChange: function(value) {
+            t.changeOpacity(value);
+          }
+        }, "imagerySlider").startup();
+
+        this.getGeocodeExtents();
 
         //this.mapIdNode.innerHTML = 'map id:' + this.map.id;
         console.log('startup');
@@ -298,7 +402,6 @@ define(
         domStyle.set(dom.byId("submitConversation"), "display", "none");
         domStyle.set(dom.byId("viewAllFeedback"), "display", "none");
         domStyle.set(dom.byId("toggleAttribute"), "display", "none");
-        domStyle.set(dom.byId("imageryControl"), "display", "none");
 
         //console.log(this.layers);
 
@@ -373,6 +476,9 @@ define(
 
       },
 
+
+
+
       declineInvitationFailed: function(response, io) {
 
         console.log(response);
@@ -381,7 +487,10 @@ define(
 
 
       submitConversation: function() {
-
+        if (this.agolUser.isAdmin)
+        {
+          domStyle.set(dom.byId("editorDiv"), "display", "none");
+        }
       },
 
       engageFeedback: function(credential) {
@@ -411,10 +520,11 @@ define(
             } else {
               domStyle.set(dom.byId("viewAllFeedback"), "display", "block");
               domStyle.set(dom.byId("toggleAttribute"), "display", "block");
-              domStyle.set(dom.byId("imageryControl"), "display", "block");
 
-              domStyle.set(dom.byId("editorDiv"), "display", "block");
+
               this.toggleFeedbackLayersVisibility(true);
+
+
             }
           }
         } else if (response.isAuthenticated === true && response.userInvitation) {
@@ -453,6 +563,11 @@ define(
         var len = this.config.editor.layerInfos.length;
         var layerInfos = this.config.editor.layerInfos;
         */
+
+        if (this.agolUser.isAdmin)
+        {
+          domStyle.set(dom.byId("editorDiv"), "display", "none");
+        }
 
 
         if (!this.agolUser.layerInfos || this.agolUser.layerInfos.length === 0) {
@@ -622,22 +737,8 @@ define(
 
         domStyle.set(dom.byId("viewAllFeedback"), "display", "block");
         domStyle.set(dom.byId("toggleAttribute"), "display", "block");
-        domStyle.set(dom.byId("imageryControl"), "display", "block");
 
-        var t = this;
-        var slider = new HorizontalSlider({
-          name: "slider",
-          value: 0,
-          minimum: 0,
-          maximum: 1,
-          intermediateChanges: true,
-          style: "width:125px;",
-          onChange: function(value) {
-            t.changeOpacity(value);
-          }
-        }, "imagerySlider").startup();
 
-        this.getGeocodeExtents();
 
         /*
         console.log(this.editor.attributeInspector);
@@ -654,23 +755,28 @@ define(
       populateCommunities: function() {
 
 
-        this.extentName = [];
+        var extentName = [];
         if (this.extents) {
 
           ///Desktop
-          this.extentName = [];
+          var extentName = [];
           var ctr = 0;
           for (var k in this.extents) {
-            this.extentName.push({
-              'name': k,
-              id: ctr.toString()
+            extentName.push({
+              'name': k
             });
-            ctr++;
           }
+
+
+          ///START OF Community Selector
+          this.createSelectBox(false, "communitySelector", extentName, "Community Selector", this.changeExtent);
+
+
+/*
           var dataItems = {
             identifier: 'name',
             label: 'name',
-            items: this.extentName
+            items: extentName
           };
 
           var store = new ItemFileReadStore({
@@ -710,6 +816,8 @@ define(
               selectOnClick: true,
               searchAttr: "name"
             }, "communitySelector");
+
+*/
             /*}
                     else
                     {
@@ -729,7 +837,7 @@ define(
                             value: ''
                         }, id);
                     }
-          */
+
           }
 
           function error(errData, request) {
@@ -746,6 +854,7 @@ define(
             onError: lang.hitch(this, error),
             sort: sortAttributes
           });
+          */
 
         } else {
           console.log("problem");
@@ -1099,6 +1208,38 @@ define(
           path.applyTransform(Gfx.matrix.scale(0.6));
         }));
 
+
+        feedbackButton = domConstruct.create("div", {
+          "id": "reassign",
+          "class":"feedbackStatusButton reassignButton mblButton"
+        }, buttonsDiv);
+
+
+        feedbackImg = domConstruct.create("div", {
+          "class": "statusImg"
+        }, feedbackButton);
+
+
+        feedbackText = domConstruct.create("div", {
+          "class":"statusText",
+          "innerHTML":"<p>Reassign</p>"
+        }, feedbackButton);
+
+
+        var surface = Gfx.createSurface(feedbackImg, 30, 30);
+        var path = surface.createPath({path:this.config.replyGraphic.path});
+        path.setFill(this.config.replyGraphic.colour);
+        path.setStroke(this.config.replyGraphic.colour);
+        path.applyTransform(Gfx.matrix.scale(0.6));
+
+
+        $(".reassignButton", buttonsDiv).on('click', lang.hitch(this,function(btn){
+          this.feedbackComment(-1, buttonsDiv);
+          this.findIntersectingCommunities(this.editor.attributeInspector._currentFeature);
+          //this.reassign = true;
+        }));
+
+
         var oc = $(".feedbackStatusButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
           console.log(btn.currentTarget.innerHTML);
           var splitTest = btn.currentTarget.id.split("changeStatus_");
@@ -1108,6 +1249,8 @@ define(
             // this.changeFeedback(status);
           }
         }));
+
+
         // Destroy buttons on close
         var od = this.map.infoWindow.on("hide", function() {
           oc.remove();
@@ -1117,7 +1260,6 @@ define(
             registry.byId('commentPane').destroyRecursive();
           }
         });
-
       },
 
       feedbackComment: function(status, buttonsDiv) {
@@ -1129,6 +1271,16 @@ define(
             "class": "commentPane",
             "id": "commentPane"
           }, $(".commentDiv")[0]);
+
+
+          if (status == -1)
+          {
+            domConstruct.create("input", {
+              "id":"intersectingCommunity",
+              "innerHTML": this.nls.feedbackComment
+            }, registry.byId("commentPane").domNode);
+          }
+
           domConstruct.create("label", {
             "for": "fbComment",
             "innerHTML": this.nls.feedbackComment
@@ -1139,6 +1291,7 @@ define(
             "rows": 3,
             "cols": 27
           });
+
           registry.byId("commentPane").addChild(registry.byId("fbComment"));
           domConstruct.create("br", null, registry.byId("commentPane").domNode);
 
@@ -1169,7 +1322,15 @@ define(
             } else {
               comment = "";
             }
-            this.changeFeedback(status, comment);
+
+            if (status == -1)
+            {
+              this.changeCommunity(this.communityChange, comment);
+            }
+            else
+            {
+              this.changeFeedback(status, comment);
+            }
           }));
 
           var ocan = on(commentCancel, 'click', lang.hitch(this, function() {
@@ -1184,10 +1345,7 @@ define(
           domStyle.set($(".commentDiv")[0], 'display', 'block');
           registry.byId("fbComment").reset();
           registry.byId("fbComment").focus();
-
         }
-
-
       },
 
       changeFeedback: function(status, comment) {
@@ -1204,8 +1362,21 @@ define(
 
       },
 
-      changeFeedbackSuccess: function(response) {
+      changeCommunity: function(community, comment) {
+        var curFeature = this.editor.attributeInspector._currentFeature;
+        var changeURL = this.config.feedbackUrl + "/ChangeCommunity?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&community=" + community;
+        var changeRequest = esriRequest({
+          url: changeURL,
+          handleAs: "json"
+        });
+        changeRequest.then(lang.hitch(this, this.changeFeedbackSuccess), lang.hitch(this, this.changeFeedbackFailure)).then(lang.hitch(this, function() {
+          this.map.infoWindow.hide();
+        }));
+      },
 
+
+      changeFeedbackSuccess: function(response) {
+        //TODO - Look up name of graphics layer
         this.map.getLayer("graphicsLayer2").clearSelection();
         this.map.getLayer("graphicsLayer2").refresh();
         console.log(response);
