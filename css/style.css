@@ -95,7 +95,7 @@
 	max-height: 700px !important;
 }
 
-#divControl > *
+#divControl, label, table
 {
   float: left;
 }
