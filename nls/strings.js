@@ -13,7 +13,13 @@ define({
 		},
     feedbackComment: "Comments",
     commentOK: "OK",
-    commentCancel: "Cancel"
+    commentCancel: "Cancel",
+    feedbackTemplate: {
+      "community": "Community:",
+      "status": "Status:",
+      "obs_type": "Observation Type:",
+      "description": "Description:"
+    }
   },
   "zh-cn": true
 });

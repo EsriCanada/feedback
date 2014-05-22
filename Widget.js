@@ -21,6 +21,7 @@ define(
     "dijit/registry",
     "dijit/_WidgetsInTemplateMixin",
     "esri/request",
+    "esri/InfoTemplate",
     "esri/dijit/editing/Editor",
     "esri/dijit/editing/TemplatePicker",
     "esri/dijit/PopupTemplate",
@@ -69,6 +70,7 @@ define(
     registry,
     _WidgetsInTemplateMixin,
     esriRequest,
+    InfoTemplate,
     Editor,
     TemplatePicker,
     PopupTemplate,
@@ -134,16 +136,24 @@ define(
           if (!tokenUtils.userHaveSignIn()) {
             return;
           }
+          var curFeature = this.editor.attributeInspector._currentFeature;
           if (this.attributeInspectorIsHydrated === false) {
             this.editor.attributeInspector.on("next", lang.hitch(this, function(evt) {
 
               // var rinkwatchTemplate = new InfoTemplate(i18n.popup.title, popup.popupTemplate);
               console.log(evt);
-              this.dealWithSelectedFeature();
+              this.createInfoTemplate(curFeature).then(lang.hitch(this, function(template) {
+                curFeature.setInfoTemplate(template);
+                this.dealWithSelectedFeature();
+              }));
             }));
             this.attributeInspectorIsHydrated = true;
           }
-          this.dealWithSelectedFeature();
+          this.createInfoTemplate(curFeature).then(lang.hitch(this, function(template) {
+            curFeature.setInfoTemplate(template);
+            this.dealWithSelectedFeature();
+          }));
+          // this.dealWithSelectedFeature();
         }));
 
         this.map.infoWindow.on("hide", lang.hitch(this, function() {
@@ -298,7 +308,7 @@ define(
         var commentDiv = domConstruct.create("div", {
           "class": "commentDiv"
         }, atiButtonsDiv);
-        if (this.agolUser.isAdmin === true) {
+        if (this.agolUser.isAdmin) {
           this.showFeedbackButtons(buttonsDiv);
         }
         //this.map.centerAt(this.editor.attributeInspector._currentFeature.geometry);
@@ -1322,7 +1332,7 @@ define(
           }, $(".commentDiv")[0]);
 
 
-          if (status == -1) {
+          if (status === -1) {
             domConstruct.create("input", {
               "id":"intersectingCommunity",
               "innerHTML": this.nls.feedbackComment
@@ -1440,6 +1450,24 @@ define(
       changeFeedbackFailure: function(response) {
 
         console.log(response);
+
+      },
+
+      createInfoTemplate: function(f) {
+
+        var d = new Deferred();
+        var att = f.attributes;
+
+        var community = "<b>" + this.nls.feedbackTemplate.community + "</b><br />" + att.mgmt_data_source + "<br />";
+        var status = "<b>" + this.nls.feedbackTemplate.status + "</b><br />" + att.mgmt_data_source + "<br />";
+        var obs_type = "<b>" + this.nls.feedbackTemplate.obs_type + "</b><br />" + att.mgmt_data_source + "<br />";
+        var desc = "<b>" + this.nls.feedbackTemplate.description + "</b><br />" + att.mgmt_data_source + "<br />";
+        var template = community + status + obs_type + desc;
+
+        var feedbackTemplate = new InfoTemplate(null, template);
+
+        d.resolve(feedbackTemplate);
+        return d.promise;
 
       },
 
