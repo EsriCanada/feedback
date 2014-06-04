@@ -30,7 +30,7 @@ define(
     "esri/tasks/PrintTask",
     "esri/tasks/PrintParameters",
     "esri/tasks/PrintTemplate",
-
+    "esri/dijit/Legend",
     "dojox/gfx",
     "dojox/lang/functional",
     "dojox/mobile/TextArea",
@@ -76,7 +76,7 @@ define(
     PrintTask,
     PrintParameters,
     PrintTemplate,
-
+    Legend,
     Gfx,
     functional,
     mTextArea,
@@ -284,7 +284,7 @@ define(
         var commentDiv = domConstruct.create("div", {
           "class": "commentDiv"
         }, atiButtonsDiv);
-        if (this.agolUser.isAdmin == 1) {
+        if (this.agolUser.isAdmin) {
           this.showFeedbackButtons(buttonsDiv);
         }
         //this.map.centerAt(this.editor.attributeInspector._currentFeature.geometry);
@@ -317,7 +317,6 @@ define(
           });
           this.map.addLayer(this.imagery, 1);
         }
-
 
         var t = this;
         var slider = new HorizontalSlider({
@@ -510,6 +509,20 @@ define(
 
         this.agolUser = response;
         console.log(this.agolUser);
+
+        var layer = new FeatureLayer(this.agolUser.layerInfos[0].featureLayer.url, this.agolUser.layerInfos[0].featureLayer.options);
+
+        var linfo = [{
+            layer : layer,
+            title : "Feedback Status"
+          }];
+
+        var legendDijit = new Legend({
+          map : this.map,
+          layerInfos : linfo
+        }, "legendDiv");
+
+        legendDijit.startup();
 
         if (response.isAuthenticated === true && response.isMember) {
           if (response.isMember === true) {
@@ -1130,6 +1143,15 @@ define(
           console.log(result);
           this.queryConversation();
         }));
+
+
+        var commentUrl = this.config.feedbackUrl + "/Comment?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&obsguid=" + curFeature.attributes.obs_guid;
+        var changeRequest = esriRequest({
+          url: commentUrl,
+          handleAs: "json"
+        });
+
+
 
       },
 
