@@ -32,6 +32,7 @@ define({
         "Missing Feature" : "Missing Feature"
     },
     feedbackComment: "Comments",
+    feedbackAddComment: "Comment",
     feedbackAttachment: "Attachments",
     reassignButton: "Reassign",
     commentOK: "Submit",

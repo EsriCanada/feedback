@@ -264,7 +264,6 @@ define(
             data: items
           });
           if (!mobile) {
-
             this.comboBox = new ComboBoxDesktop({
               id: id,
               name: id,
@@ -850,6 +849,8 @@ define(
 
         domStyle.set(dom.byId("viewAllFeedback"), "display", "block");
         domStyle.set(dom.byId("toggleAttribute"), "display", "block");
+
+        // Remove the editorDiv for admin users
         if (this.agolUser.isAdmin) {
           domStyle.set(dom.byId("editorDiv"), "display", "none");
         }
@@ -951,8 +952,9 @@ define(
 
         if (alias in this.extents) {
           return this.extents[alias].data_source;
-        } else
+        } else {
           return "CanVec";
+        }
 
       },
 
@@ -960,7 +962,7 @@ define(
       getAlias: function(contributor) {
 
         for (var i in this.extents) {
-          if (this.extents[i].data_source == contributor) {
+          if (this.extents[i].data_source === contributor) {
             return i;
           }
         }
@@ -1188,32 +1190,36 @@ define(
 
       },
 
-      submitConversation: function() {
+      submitComment: function(comment) {
 
-        //console.log(dom.byId('converse').value);
-        var comments = dom.byId('converse').value;
-        var obs_guid = this.editor.attributeInspector._currentFeature.attributes.globalid;
+        var curFeature = this.editor.attributeInspector._currentFeature;
+        var obs_guid = curFeature.attributes.globalid;
 
-        //var featureLayer = new FeatureLayer(this.config.conversationUrl);
         var featureLayer = new FeatureLayer(this.agolUser.conversationUrl);
 
-        var conversationRecord = {
-          attributes: {
-            obs_guid: obs_guid,
-            comments: comments
+        var commentRecord = {
+          "attributes": {
+            "obs_guid": obs_guid,
+            "comments": comment
           }
         };
 
-        featureLayer.applyEdits([conversationRecord], null, null).then(lang.hitch(this, function(result) {
+        featureLayer.applyEdits([commentRecord], null, null).then(lang.hitch(this, function(result) {
           console.log(result);
           this.queryConversation();
+          this.map.infoWindow.hide();
         }));
 
         var commentUrl = this.config.feedbackUrl + "/Comment?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&obsguid=" + curFeature.attributes.obs_guid;
+
         var changeRequest = esriRequest({
           url: commentUrl,
           handleAs: "json"
         });
+
+        changeRequest.then(lang.hitch(this, function() {
+
+        }));
 
       },
 
@@ -1272,12 +1278,38 @@ define(
 
       showFeedbackButtons: function(buttonsDiv) {
 
-        // Set height of popup...
-        // domStyle.set($(".contentPane")[0], "max-height", "300px");
+        // addCommentButton
+        var addCommentButton = domConstruct.create("div", {
+          "id": "addCommentButton",
+          "class": "feedbackStatusButton mblButton addCommentButton"
+        }, buttonsDiv);
+
+        var addCommentImg = domConstruct.create("div", {
+          "class": "statusImg"
+        }, addCommentButton);
+
+        var addCommentText = domConstruct.create("div", {
+          "class": "statusText",
+          "innerHTML": "<p>" + this.nls.feedbackAddComment + "</p>"
+        }, addCommentButton);
+
+
+        var addCommentSurface = Gfx.createSurface(addCommentImg, 30, 30);
+        var addCommentPath = addCommentSurface.createPath({
+          path: this.config.commentGraphic.path
+        });
+
+        addCommentPath.setFill(this.config.commentGraphic.colour);
+        addCommentPath.setStroke(this.config.commentGraphic.colour);
+        addCommentPath.applyTransform(Gfx.matrix.scale(0.6));
+
+        // Most other buttons dependent on this logic
         var feedbackButtons = this.config.FeedbackWorkflow[this.editor.attributeInspector._currentFeature.attributes.feedback_status];
         console.log(this.editor.attributeInspector._currentFeature.attributes.feedback_status);
+
         // Add appropriate buttons to infoWindow
-        array.forEach(feedbackButtons, lang.hitch(this, function(entry, i) {
+        array.forEach(feedbackButtons, lang.hitch(this, function(entry) {
+
           var feedbackButton = domConstruct.create("div", {
             "class": "feedbackStatusButton mblButton",
             "id": "changeStatus_" + entry
@@ -1299,37 +1331,44 @@ define(
           path.setFill(this.config.buttons[entry].colour);
           path.setStroke(this.config.buttons[entry].colour);
           path.applyTransform(Gfx.matrix.scale(0.6));
+
         }));
 
-        var feedbackButton = domConstruct.create("div", {
+        // reassignButton
+        var reassignButton = domConstruct.create("div", {
           "id": "reassign",
           "class": "feedbackStatusButton reassignButton mblButton"
         }, buttonsDiv);
 
-        var feedbackImg = domConstruct.create("div", {
+        var reassignImg = domConstruct.create("div", {
           "class": "statusImg"
-        }, feedbackButton);
+        }, reassignButton);
 
-        var feedbackText = domConstruct.create("div", {
+        var reassignText = domConstruct.create("div", {
           "class": "statusText",
           "innerHTML": "<p>" + this.nls.reassignButton + "</p>"
-        }, feedbackButton);
+        }, reassignButton);
 
-        var surface = Gfx.createSurface(feedbackImg, 30, 30);
-        var path = surface.createPath({
+        var reassignSurface = Gfx.createSurface(reassignImg, 30, 30);
+        var reassignPath = reassignSurface.createPath({
           path: this.config.replyGraphic.path
         });
-        path.setFill(this.config.replyGraphic.colour);
-        path.setStroke(this.config.replyGraphic.colour);
-        path.applyTransform(Gfx.matrix.scale(0.6));
+        reassignPath.setFill(this.config.replyGraphic.colour);
+        reassignPath.setStroke(this.config.replyGraphic.colour);
+        reassignPath.applyTransform(Gfx.matrix.scale(0.6));
 
+
+        $(".addCommentButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
+          this.feedbackComment(-2, buttonsDiv);
+          // this.findIntersectingCommunities(this.editor.attributeInspector._currentFeature);
+          //this.reassign = true;
+        }));
 
         $(".reassignButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
           this.feedbackComment(-1, buttonsDiv);
           this.findIntersectingCommunities(this.editor.attributeInspector._currentFeature);
           //this.reassign = true;
         }));
-
 
         var oc = $(".feedbackStatusButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
           // console.log(btn.currentTarget.innerHTML);
@@ -1392,6 +1431,7 @@ define(
             "innerHTML": this.nls.feedbackComment
           }, registry.byId("commentPane").domNode);
           domConstruct.create("br", null, registry.byId("commentPane").domNode);
+
           new mTextArea({
             "id": "fbComment",
             "rows": 3,
@@ -1428,9 +1468,13 @@ define(
             } else {
               comment = "";
             }
-
+            // reassign
             if (status === -1) {
               this.changeCommunity(this.communityChange, comment);
+            // comment only
+            } else if (status === -2) {
+              this.submitComment(comment);
+            // all other buttons
             } else {
               this.changeFeedback(status, comment);
             }
@@ -1443,7 +1487,6 @@ define(
           }));
 
         } else {
-
           domStyle.set(buttonsDiv, 'display', 'none');
           domStyle.set($(".addCommentDiv")[0], 'display', 'block');
           registry.byId("fbComment").reset();
@@ -1460,7 +1503,7 @@ define(
           handleAs: "json"
         });
         changeRequest.then(lang.hitch(this, this.changeFeedbackSuccess), lang.hitch(this, this.changeFeedbackFailure)).then(lang.hitch(this, function() {
-          this.map.infoWindow.hide();
+          this.submitComment(comment);
         }));
 
       },
@@ -1473,7 +1516,7 @@ define(
           handleAs: "json"
         });
         changeRequest.then(lang.hitch(this, this.changeFeedbackSuccess), lang.hitch(this, this.changeFeedbackFailure)).then(lang.hitch(this, function() {
-          this.map.infoWindow.hide();
+          this.submitComment(comment);
         }));
       },
 
