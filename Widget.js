@@ -33,7 +33,7 @@ define(
     "esri/tasks/PrintTask",
     "esri/tasks/PrintParameters",
     "esri/tasks/PrintTemplate",
-
+    "esri/dijit/Legend",
     "dojox/gfx",
     "dojox/lang/functional",
     "dojox/mobile/TextArea",
@@ -82,7 +82,7 @@ define(
     PrintTask,
     PrintParameters,
     PrintTemplate,
-
+    Legend,
     Gfx,
     functional,
     mTextArea,
@@ -135,8 +135,8 @@ define(
             this.editor.attributeInspector.on("next", lang.hitch(this, function(evt) {
               console.log(evt);
               // this.createInfoTemplate(curFeature).then(lang.hitch(this, function(template) {
-                // curFeature.setInfoTemplate(template);
-                this.dealWithSelectedFeature();
+              // curFeature.setInfoTemplate(template);
+              this.dealWithSelectedFeature();
               // }));
             }));
             this.attributeInspectorIsHydrated = true;
@@ -148,10 +148,10 @@ define(
           //   }, this);
           // }));
           // this.createInfoTemplate(curFeature).then(lang.hitch(this, function(template) {
-            // curFeature.setInfoTemplate(template);
-            // #### DOESN'T WORK... CLEARS THE ATTRIBUTE INSPECTOR curFeature ####
-            // this.map.infoWindow.resize(querySettings.popupSize.w, querySettings.popupSize.h);
-            this.dealWithSelectedFeature();
+          // curFeature.setInfoTemplate(template);
+          // #### DOESN'T WORK... CLEARS THE ATTRIBUTE INSPECTOR curFeature ####
+          // this.map.infoWindow.resize(querySettings.popupSize.w, querySettings.popupSize.h);
+          this.dealWithSelectedFeature();
           // }));
           // this.dealWithSelectedFeature();
         }));
@@ -160,7 +160,7 @@ define(
           console.log('hide');
           dom.byId("commentDiv").innerHTML = "";
           dom.byId("attachmentDiv").innerHTML = "";
-          domStyle.set(dom.byId("submitConversation"), "display", "none");
+          // domStyle.set(dom.byId("submitConversation"), "display", "none");
         }));
         // Resize infoWindow
         // this.map.infoWindow.resize(300, 700);
@@ -215,13 +215,14 @@ define(
         }, function(data) {
           console.log(data);
         });
-      },
 
+      },
 
       communityChosen: function(community) {
-        this.communityChange = community;
-      },
 
+        this.communityChange = community;
+
+      },
 
       createSelectBox: function(mobile, id, data, placeholder, onChangeFunction) {
 
@@ -402,7 +403,6 @@ define(
           this.map.addLayer(this.imagery, 1);
         }
 
-
         var t = this;
         var slider = new HorizontalSlider({
           name: "slider",
@@ -482,12 +482,16 @@ define(
       onSignOut: function() {
 
         console.log('onSignOut');
-        dom.byId("commentDiv").innerHTML = "";
-        dom.byId("attachmentDiv").innerHTML = "";
+        if (dom.byId("commentDiv")) {
+          dom.byId("commentDiv").innerHTML = "";
+        }
+        if (dom.byId("attachmentDiv")) {
+          dom.byId("attachmentDiv").innerHTML = "";
+        }
         domStyle.set("logoPanel", "display", "block");
         domStyle.set(dom.byId("groupInvitePanel"), "display", "none");
         domStyle.set(dom.byId("editorDiv"), "display", "none");
-        domStyle.set(dom.byId("submitConversation"), "display", "none");
+        // domStyle.set(dom.byId("submitConversation"), "display", "none");
         domStyle.set(dom.byId("viewAllFeedback"), "display", "none");
         domStyle.set(dom.byId("toggleAttribute"), "display", "none");
 
@@ -589,6 +593,20 @@ define(
         // this.addCustomField(this.agolUser);
 
         console.log(this.agolUser);
+
+        var layer = new FeatureLayer(this.agolUser.layerInfos[0].featureLayer.url, this.agolUser.layerInfos[0].featureLayer.options);
+
+        var linfo = [{
+          layer: layer,
+          title: "Feedback Status"
+        }];
+
+        var legendDijit = new Legend({
+          map: this.map,
+          layerInfos: linfo
+        }, "legendDiv");
+
+        legendDijit.startup();
 
         if (response.isAuthenticated === true && response.isMember) {
           if (response.isMember === true) {
@@ -847,7 +865,6 @@ define(
 
       },
 
-
       populateCommunities: function() {
 
         var extentName = [];
@@ -862,102 +879,17 @@ define(
             });
           }
 
-
           ///START OF Community Selector
           this.createSelectBox(false, "communitySelector", extentName, "Community Selector", this.changeExtent);
-
-
-          /*
-          var dataItems = {
-            identifier: 'name',
-            label: 'name',
-            items: extentName
-          };
-
-          var store = new ItemFileReadStore({
-            data: dataItems
-          });
-          store.comparatorMap = {};
-
-          store.comparatorMap['name'] = function(a, b) {
-            if (a < b) return -1;
-            if (a > b) return 1;
-            return 0;
-          };
-
-          function completed(items, findResult) {
-
-            var sortedStore = new Memory({
-              idProperty: "selector",
-              data: items
-            });
-            //if (!t.deviceInfo.isMobile() && !t.deviceInfo.isTablet())
-            //{
-            var _this = this;
-            var comboBox = new ComboBoxDesktop({
-              id: "communitySelector",
-              name: "communitySelector",
-              selectOnClick: true,
-              placeHolder: "Select Community",
-              store: sortedStore,
-              value: "",
-              onChange: function(location) {
-                if (location == "") {
-                  location = "Canada";
-                  registry.byId(this.id).set("value", location);
-                }
-                _this.onChangeCommunity(location);
-              },
-              selectOnClick: true,
-              searchAttr: "name"
-            }, "communitySelector");
-
-*/
-          /*}
-                    else
-                    {
-                        var comboBox = new dojox.mobile.ComboBox({
-                            store: sortedStore,
-                            readonly:true,
-                            placeHolder: "Select Community",
-                            value: "",
-                            onChange: lang.hitch(this,function(location)
-                            {
-                                if (location == "") {
-                                    location = "Canada";
-                                    registry.byId(this.id).set("value", location);
-                                }
-                                this.onChangeCommunity(location);
-                            }),
-                            value: ''
-                        }, id);
-                    }
-
-          }
-
-          function error(errData, request) {
-            console.log("Failed in sorting data.");
-          }
-
-          var sortAttributes = [{
-            attribute: "name",
-            ascending: true
-          }];
-
-          store.fetch({
-            onComplete: lang.hitch(this, completed),
-            onError: lang.hitch(this, error),
-            sort: sortAttributes
-          });
-          */
 
         } else {
           console.log("problem");
         }
+
       },
 
-
       getGeocodeExtents: function() {
+
         var qt = new QueryTask("http://gfx.esri.ca/arcgis/rest/services/Communities/Contributors/FeatureServer/1");
         var qp = lang.mixin(new Query(), {
           returnGeometry: false,
@@ -1009,37 +941,42 @@ define(
       },
 
       onChangeCommunity: function(location) {
+
         this.changeExtent(location);
+
       },
 
       //get the data source name based on alias
       getDataSourceName: function(alias) {
+
         if (alias in this.extents) {
           return this.extents[alias].data_source;
         } else
           return "CanVec";
+
       },
 
       //get the alias based on data source name
       getAlias: function(contributor) {
+
         for (var i in this.extents) {
           if (this.extents[i].data_source == contributor) {
             return i;
           }
         }
         return "Canada";
+
       },
 
       changeExtent: function(community) {
+
         var extentObj = this.extents[community];
         var extent = new Extent(extentObj.extent.xmin, extentObj.extent.ymin, extentObj.extent.xmax, extentObj.extent.ymax, new SpatialReference({
           wkid: 4326
         }));
         this.map.setExtent(extent, true);
+
       },
-
-
-
 
       changeOpacity: function(op) {
 
@@ -1088,7 +1025,9 @@ define(
       },
 
       attributeTableClosed: function() {
+
         console.log("remove");
+
       },
 
       toggleAttribute: function() {
@@ -1122,7 +1061,6 @@ define(
                 }
               }];
 
-
               widget.config.layers = layers;
 
               html.place(widget.domNode, jimuConfig.mainPageId);
@@ -1138,7 +1076,6 @@ define(
 
       },
 
-
       toggleImagery: function() {
 
         //console.log(this.agreeChkNode.checked);
@@ -1152,7 +1089,6 @@ define(
 
 
       },
-
 
       queryConversation: function(div) { //feature
 
@@ -1198,7 +1134,7 @@ define(
       populateCommentDiv: function(result, div) {
 
         var content = [];
-        content.push("<a id='commentToggle' class='hoverRed'>" + this.nls.feedbackComment + " (" + result.features.length +")</a><div id='comments'><br />");
+        content.push("<a id='commentToggle' class='hoverRed'>" + this.nls.feedbackComment + " (" + result.features.length + ")</a><div id='comments'><br />");
         array.forEach(result.features, function(feature) {
           // console.log(feature.attributes);
           content.push("<br />");
@@ -1224,11 +1160,11 @@ define(
       populateAttachmentDiv: function(attachments, div) {
 
         var content = [];
-        content.push("<a id='attachmentToggle' class='hoverRed'>" + this.nls.feedbackAttachment + " (" + attachments.length +")</a><div id='attachments'><br />");
+        content.push("<a id='attachmentToggle' class='hoverRed'>" + this.nls.feedbackAttachment + " (" + attachments.length + ")</a><div id='attachments'><br />");
         array.forEach(attachments, function(attachment) {
           // console.log(attachment);
           content.push("<br />");
-          content.push("<a href='"+ attachment.url + "' target=_blank>" + attachment.name + "</a>");
+          content.push("<a href='" + attachment.url + "' target=_blank>" + attachment.name + "</a>");
         });
         content.push("</div>");
         content.push("<hr>");
@@ -1272,6 +1208,12 @@ define(
           console.log(result);
           this.queryConversation();
         }));
+
+        var commentUrl = this.config.feedbackUrl + "/Comment?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&obsguid=" + curFeature.attributes.obs_guid;
+        var changeRequest = esriRequest({
+          url: commentUrl,
+          handleAs: "json"
+        });
 
       },
 
