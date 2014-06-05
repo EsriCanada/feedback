@@ -150,7 +150,6 @@ define(
           // this.createInfoTemplate(curFeature).then(lang.hitch(this, function(template) {
           // curFeature.setInfoTemplate(template);
           // #### DOESN'T WORK... CLEARS THE ATTRIBUTE INSPECTOR curFeature ####
-          // this.map.infoWindow.resize(querySettings.popupSize.w, querySettings.popupSize.h);
           this.dealWithSelectedFeature();
           // }));
           // this.dealWithSelectedFeature();
@@ -158,8 +157,12 @@ define(
 
         this.map.infoWindow.on("hide", lang.hitch(this, function() {
           console.log('hide');
-          dom.byId("commentDiv").innerHTML = "";
-          dom.byId("attachmentDiv").innerHTML = "";
+          if (dom.byId("commentDiv")) {
+            dom.byId("commentDiv").innerHTML = "";
+          }
+          if (dom.byId("attachmentDiv")) {
+            dom.byId("attachmentDiv").innerHTML = "";
+          }
           // domStyle.set(dom.byId("submitConversation"), "display", "none");
         }));
         // Resize infoWindow
@@ -277,7 +280,7 @@ define(
               },
               searchAttr: "name",
               selectOnClick: true
-            }, id);
+            }, id + "Div");
           } else {
             this.comboBox = new ComboBox({
               id: id,
@@ -289,8 +292,9 @@ define(
                 //onchange(location);
               },
               value: ''
-            }, id);
+            }, id + "Div");
           }
+          this.styleComboBoxes();
         }
 
         function error(errData, request) {
@@ -308,71 +312,111 @@ define(
 
       },
 
+      styleComboBoxes: function() {
+
+        $(".claro .dijitComboBox .dijitButtonNode").forEach(function(node) {
+          domStyle.set(node, {
+            "height": "28px"
+          });
+        });
+        $(".claro .dijitValidationTextBox .dijitButtonNode").forEach(function(node) {
+          domStyle.set(node, {
+            "height": "30px"
+          });
+        });
+        $(".claro .dijitComboBox .dijitArrowButtonInner").forEach(function(node) {
+          domStyle.set(node, {
+            "margin": "5px 0 0 1px",
+            "border": "0"
+          });
+        });
+        $(".claro .dijitArrowButtonContainer").forEach(function(node) {
+          domStyle.set(node, {
+            "width": "20px"
+          });
+        });
+
+        $(".claro .dijitSelect").forEach(function(node) {
+          domStyle.set(node, {
+            "height": "30px",
+            "width": "100%"
+          });
+        });
+
+      },
+
       dealWithSelectedFeature: function() {
 
-        this.map.infoWindow.resize(this.config.infoWindow.width, this.config.infoWindow.height);
         var curFeature = this.editor.attributeInspector._currentFeature;
         var atiButtonsDiv = $(".atiButtons")[0];
         var atiAttributes = $('.atiAttributes')[0];
 
-        domStyle.set($('.atiAttributes').children()[0], "display", "none");
-        domStyle.set($(".atiAttachmentEditor")[0], "display", "none");
+        // If accessing a created feature
+        if (curFeature.attributes.globalid) {
+          this.map.infoWindow.resize(this.config.infoWindow.width, this.config.infoWindow.height);
+          domStyle.set($('.atiAttributes').children()[0], "display", "none");
+          domStyle.set($(".atiAttachmentEditor")[0], "display", "none");
 
-        this.createInfoTemplate(curFeature).then(lang.hitch(this, function(template) {
-          domConstruct.create("div", {
-            "innerHTML": template,
-            "class": "feedbackTemplate"
+          this.createInfoTemplate(curFeature).then(lang.hitch(this, function(template) {
+            domConstruct.create("div", {
+              "innerHTML": template,
+              "class": "feedbackTemplate"
+            }, atiAttributes);
+          }));
+
+          // commentDiv
+          var commentDiv = domConstruct.create("div", {
+            "id": "commentDiv",
+            "class": "commentDiv"
           }, atiAttributes);
-        }));
 
-        // commentDiv
-        var commentDiv = domConstruct.create("div", {
-          "id": "commentDiv",
-          "class": "commentDiv"
-        }, atiAttributes);
+          // attachmentDiv
+          var attachmentDiv = domConstruct.create("div", {
+            "id": "attachmentDiv",
+            "class": "attachmentDiv"
+          }, atiAttributes);
 
-        // attachmentDiv
-        var attachmentDiv = domConstruct.create("div", {
-          "id": "attachmentDiv",
-          "class": "attachmentDiv"
-        }, atiAttributes);
+          var buttonsDiv = domConstruct.create("div", {
+            "class": "buttonsDiv"
+          }, atiButtonsDiv);
 
-        var buttonsDiv = domConstruct.create("div", {
-          "class": "buttonsDiv"
-        }, atiButtonsDiv);
+          // addCommentDiv
+          domConstruct.create("div", {
+            "class": "addCommentDiv"
+          }, atiButtonsDiv);
 
-        // addCommentDiv
-        domConstruct.create("div", {
-          "class": "addCommentDiv"
-        }, atiButtonsDiv);
-
-        // Add Attachments
-        var curLayer;
-        if (curFeature.geometry.type === "point") {
-          curLayer = this.agolUser.layerInfos[0].featureLayer;
-        } else if (curFeature.geometry.type === "polyline") {
-          curLayer = this.agolUser.layerInfos[1].featureLayer;
-        } else {
-          curLayer = this.agolUser.layerInfos[2].featureLayer;
-        }
-
-        var oid = curFeature.attributes.objectid;
-
-        curLayer.queryAttachmentInfos(oid, lang.hitch(this, function(attachments) {
-          var a = attachments;
-          if (a && a.length > 0) {
-            this.populateAttachmentDiv(a, attachmentDiv);
+          // Add Attachments
+          var curLayer;
+          if (curFeature.geometry.type === "point") {
+            curLayer = this.agolUser.layerInfos[0].featureLayer;
+          } else if (curFeature.geometry.type === "polyline") {
+            curLayer = this.agolUser.layerInfos[1].featureLayer;
+          } else {
+            curLayer = this.agolUser.layerInfos[2].featureLayer;
           }
-        }));
+
+          var oid = curFeature.attributes.objectid;
+
+          curLayer.queryAttachmentInfos(oid, lang.hitch(this, function(attachments) {
+            var a = attachments;
+            if (a && a.length > 0) {
+              this.populateAttachmentDiv(a, attachmentDiv);
+            }
+          }));
 
 
-        //hide the 'globalid' field in the attribute inspector
-        // domStyle.set($('.atiAttributes').children().children().children()[4], "display", "none");
-        if (this.agolUser.isAdmin) {
+          //hide the 'globalid' field in the attribute inspector
           this.showFeedbackButtons(buttonsDiv);
+
+          //this.map.centerAt(this.editor.attributeInspector._currentFeature.geometry);
+          //console.log(registry.findWidgets(this.editor.attributeInspector.attributeTable)[1].displayedValue);
+
+          // If creating a new feature
+        } else {
+          domStyle.set($('.atiAttributes').children().children().children()[4], "display", "none");
+          this.styleComboBoxes();
         }
-        //this.map.centerAt(this.editor.attributeInspector._currentFeature.geometry);
-        //console.log(registry.findWidgets(this.editor.attributeInspector.attributeTable)[1].displayedValue);
+
         if (registry.findWidgets(this.editor.attributeInspector.attributeTable)[1].displayedValue === "") {
           registry.findWidgets(this.editor.attributeInspector.attributeTable)[1].set("displayedValue", "New Observation");
           this.queryContributor(this.map.infoWindow._location).then(lang.hitch(this, function(result) {
@@ -589,6 +633,9 @@ define(
       engageFeedbackHandleSucceeded: function(response, io) {
 
         this.agolUser = response;
+        // if (!this.agolUser.isAdmin) {
+        //   domStyle.set(dom.byId("provideFeedbackDiv"), "display", "block");
+        // }
         // this.addCustomField(this.agolUser);
 
         console.log(this.agolUser);
@@ -843,16 +890,16 @@ define(
 
         this.editor.startup();
         //this.editor.templatePicker.attr("rows", 1);
-        myEditor = this.editor;
+        // myEditor = this.editor;
 
         // var layer = this.getLayerFromMap(featureLayer.url);
 
         domStyle.set(dom.byId("viewAllFeedback"), "display", "block");
         domStyle.set(dom.byId("toggleAttribute"), "display", "block");
 
-        // Remove the editorDiv for admin users
-        if (this.agolUser.isAdmin) {
-          domStyle.set(dom.byId("editorDiv"), "display", "none");
+        // Remove the provideFeedbackDiv for admin users
+        if (!this.agolUser.isAdmin) {
+          domStyle.set(dom.byId("provideFeedbackDiv"), "display", "block");
         }
 
         /*
@@ -1148,7 +1195,7 @@ define(
           content.push(feature.attributes.comments);
         });
         content.push("</div>");
-        content.push("<hr>");
+        content.push("<hr class='greyHR narrowHR'>");
         div.innerHTML = content.join("");
 
         domStyle.set(dom.byId("comments"), "display", "none");
@@ -1169,7 +1216,7 @@ define(
           content.push("<a href='" + attachment.url + "' target=_blank>" + attachment.name + "</a>");
         });
         content.push("</div>");
-        content.push("<hr>");
+        content.push("<hr class='greyHR narrowHR'>");
         div.innerHTML = content.join("");
 
         domStyle.set(dom.byId("attachments"), "display", "none");
@@ -1190,9 +1237,9 @@ define(
 
       },
 
-      submitComment: function(comment) {
+      submitComment: function(comment, curFeature) {
 
-        var curFeature = this.editor.attributeInspector._currentFeature;
+        this.map.infoWindow.hide();
         var obs_guid = curFeature.attributes.globalid;
 
         var featureLayer = new FeatureLayer(this.agolUser.conversationUrl);
@@ -1207,7 +1254,6 @@ define(
         featureLayer.applyEdits([commentRecord], null, null).then(lang.hitch(this, function(result) {
           console.log(result);
           this.queryConversation();
-          this.map.infoWindow.hide();
         }));
 
         var commentUrl = this.config.feedbackUrl + "/Comment?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&obsguid=" + curFeature.attributes.obs_guid;
@@ -1216,10 +1262,6 @@ define(
           url: commentUrl,
           handleAs: "json"
         });
-
-        changeRequest.then(lang.hitch(this, function() {
-
-        }));
 
       },
 
@@ -1278,6 +1320,7 @@ define(
 
       showFeedbackButtons: function(buttonsDiv) {
 
+        // domConstruct.create("hr class='greyHR narrowHR'", null, buttonsDiv);
         // addCommentButton
         var addCommentButton = domConstruct.create("div", {
           "id": "addCommentButton",
@@ -1303,82 +1346,79 @@ define(
         addCommentPath.setStroke(this.config.commentGraphic.colour);
         addCommentPath.applyTransform(Gfx.matrix.scale(0.6));
 
-        // Most other buttons dependent on this logic
-        var feedbackButtons = this.config.FeedbackWorkflow[this.editor.attributeInspector._currentFeature.attributes.feedback_status];
-        console.log(this.editor.attributeInspector._currentFeature.attributes.feedback_status);
-
-        // Add appropriate buttons to infoWindow
-        array.forEach(feedbackButtons, lang.hitch(this, function(entry) {
-
-          var feedbackButton = domConstruct.create("div", {
-            "class": "feedbackStatusButton mblButton",
-            "id": "changeStatus_" + entry
-          }, buttonsDiv);
-
-          var feedbackImg = domConstruct.create("div", {
-            "class": "statusImg"
-          }, feedbackButton);
-
-          var feedbackText = domConstruct.create("div", {
-            "class": "statusText",
-            "innerHTML": "<p>" + this.nls.FeedbackButtonStates[entry] + "</p>"
-          }, feedbackButton);
-
-          var surface = Gfx.createSurface(feedbackImg, 30, 30);
-          var path = surface.createPath({
-            path: this.config.buttons[entry].path
-          });
-          path.setFill(this.config.buttons[entry].colour);
-          path.setStroke(this.config.buttons[entry].colour);
-          path.applyTransform(Gfx.matrix.scale(0.6));
-
-        }));
-
-        // reassignButton
-        var reassignButton = domConstruct.create("div", {
-          "id": "reassign",
-          "class": "feedbackStatusButton reassignButton mblButton"
-        }, buttonsDiv);
-
-        var reassignImg = domConstruct.create("div", {
-          "class": "statusImg"
-        }, reassignButton);
-
-        var reassignText = domConstruct.create("div", {
-          "class": "statusText",
-          "innerHTML": "<p>" + this.nls.reassignButton + "</p>"
-        }, reassignButton);
-
-        var reassignSurface = Gfx.createSurface(reassignImg, 30, 30);
-        var reassignPath = reassignSurface.createPath({
-          path: this.config.replyGraphic.path
-        });
-        reassignPath.setFill(this.config.replyGraphic.colour);
-        reassignPath.setStroke(this.config.replyGraphic.colour);
-        reassignPath.applyTransform(Gfx.matrix.scale(0.6));
-
-
         $(".addCommentButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
           this.feedbackComment(-2, buttonsDiv);
-          // this.findIntersectingCommunities(this.editor.attributeInspector._currentFeature);
-          //this.reassign = true;
         }));
 
-        $(".reassignButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
-          this.feedbackComment(-1, buttonsDiv);
-          this.findIntersectingCommunities(this.editor.attributeInspector._currentFeature);
-          //this.reassign = true;
-        }));
+        // Create buttons if admin user
+        if (this.agolUser.isAdmin) {
+          // Most other buttons dependent on this logic
+          var feedbackButtons = this.config.FeedbackWorkflow[this.editor.attributeInspector._currentFeature.attributes.feedback_status];
+          console.log(this.editor.attributeInspector._currentFeature.attributes.feedback_status);
 
-        var oc = $(".feedbackStatusButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
-          // console.log(btn.currentTarget.innerHTML);
-          var splitTest = btn.currentTarget.id.split("changeStatus_");
-          if (splitTest.length > 1) {
-            var status = splitTest[1];
-            this.feedbackComment(status, buttonsDiv);
-            // this.changeFeedback(status);
-          }
-        }));
+          // Add appropriate buttons to infoWindow
+          array.forEach(feedbackButtons, lang.hitch(this, function(entry) {
+            var feedbackButton = domConstruct.create("div", {
+              "class": "feedbackStatusButton mblButton",
+              "id": "changeStatus_" + entry
+            }, buttonsDiv);
+
+            var feedbackImg = domConstruct.create("div", {
+              "class": "statusImg"
+            }, feedbackButton);
+
+            var feedbackText = domConstruct.create("div", {
+              "class": "statusText",
+              "innerHTML": "<p>" + this.nls.FeedbackButtonStates[entry] + "</p>"
+            }, feedbackButton);
+
+            var surface = Gfx.createSurface(feedbackImg, 30, 30);
+            var path = surface.createPath({
+              path: this.config.buttons[entry].path
+            });
+            path.setFill(this.config.buttons[entry].colour);
+            path.setStroke(this.config.buttons[entry].colour);
+            path.applyTransform(Gfx.matrix.scale(0.6));
+          }));
+
+          var oc = $(".feedbackStatusButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
+            var splitTest = btn.currentTarget.id.split("changeStatus_");
+            if (splitTest.length > 1) {
+              var status = splitTest[1];
+              this.feedbackComment(status, buttonsDiv);
+            }
+          }));
+
+          // reassignButton
+          var reassignButton = domConstruct.create("div", {
+            "id": "reassign",
+            "class": "feedbackStatusButton reassignButton mblButton"
+          }, buttonsDiv);
+
+          var reassignImg = domConstruct.create("div", {
+            "class": "statusImg"
+          }, reassignButton);
+
+          var reassignText = domConstruct.create("div", {
+            "class": "statusText",
+            "innerHTML": "<p>" + this.nls.reassignButton + "</p>"
+          }, reassignButton);
+
+          var reassignSurface = Gfx.createSurface(reassignImg, 30, 30);
+          var reassignPath = reassignSurface.createPath({
+            path: this.config.replyGraphic.path
+          });
+          reassignPath.setFill(this.config.replyGraphic.colour);
+          reassignPath.setStroke(this.config.replyGraphic.colour);
+          reassignPath.applyTransform(Gfx.matrix.scale(0.6));
+
+          $(".reassignButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
+            this.feedbackComment(-1, buttonsDiv);
+            this.findIntersectingCommunities(this.editor.attributeInspector._currentFeature);
+            //this.reassign = true;
+          }));
+
+        }
 
         // Destroy buttons and div on close
         var od = this.map.infoWindow.on("hide", lang.hitch(this, function() {
@@ -1421,7 +1461,7 @@ define(
 
           if (status === -1) {
             domConstruct.create("input", {
-              "id": "intersectingCommunity",
+              "id": "intersectingCommunityDiv",
               "innerHTML": this.nls.feedbackComment
             }, registry.byId("commentPane").domNode);
           }
@@ -1473,7 +1513,7 @@ define(
               this.changeCommunity(this.communityChange, comment);
             // comment only
             } else if (status === -2) {
-              this.submitComment(comment);
+              this.submitComment(comment, this.editor.attributeInspector._currentFeature);
             // all other buttons
             } else {
               this.changeFeedback(status, comment);
@@ -1503,7 +1543,7 @@ define(
           handleAs: "json"
         });
         changeRequest.then(lang.hitch(this, this.changeFeedbackSuccess), lang.hitch(this, this.changeFeedbackFailure)).then(lang.hitch(this, function() {
-          this.submitComment(comment);
+          this.submitComment(comment, curFeature);
         }));
 
       },
@@ -1516,7 +1556,7 @@ define(
           handleAs: "json"
         });
         changeRequest.then(lang.hitch(this, this.changeFeedbackSuccess), lang.hitch(this, this.changeFeedbackFailure)).then(lang.hitch(this, function() {
-          this.submitComment(comment);
+          this.submitComment(comment, curFeature);
         }));
       },
 
@@ -1550,12 +1590,12 @@ define(
         var d = new Deferred();
         var att = f.attributes;
 
-        var community = "<b>" + this.nls.feedbackTemplate.community + "</b><br />" + att.mgmt_data_source + "<hr>";
-        var status = this.nls.FeedbackStates[att.feedback_status] + "<hr>";
-        var obs_type = "<b>" + this.nls.feedbackTemplate.obs_type + "</b><br />" + this.nls.FeedbackTypes[att.feedback_obstype] + "<hr>";
+        var community = "<b>" + this.nls.feedbackTemplate.community + "</b><br />" + att.mgmt_data_source + "<hr class='greyHR narrowHR'>";
+        var status = this.nls.FeedbackStates[att.feedback_status] + "<hr class='greyHR narrowHR'>";
+        var obs_type = "<b>" + this.nls.feedbackTemplate.obs_type + "</b><br />" + this.nls.FeedbackTypes[att.feedback_obstype] + "<hr class='greyHR narrowHR'>";
         var desc;
         if (att.feedback_comments && att.feedback_comments !== null) {
-          desc = "<b>" + this.nls.feedbackTemplate.description + "</b>&nbsp;" + att.feedback_comments + "<hr>";
+          desc = "<b>" + this.nls.feedbackTemplate.description + "</b>&nbsp;" + att.feedback_comments + "<hr class='greyHR narrowHR'>";
         } else {
           desc = "";
         }

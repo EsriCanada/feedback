@@ -1,14 +1,10 @@
-.jimu-widget-demo div:first-child {
-	color: red;
-}
-
 .feedbackStatusButton, .reassignButton {
 	cursor: pointer;
-	font-weight:bold;
-	background-color:#EFEFF3;
-	background-image:none;
-	border:1px solid #DDD;
-	width: 40%;
+	font-weight: bold;
+	background-color: #EFEFF3;
+	background-image: none;
+	border: 1px solid #DDD;
+	width: 100px;
 	margin: 4px;
 	margin-left: 6px;
 	height: 32px;
@@ -17,10 +13,9 @@
 }
 
 .statusImg {
-	width:30px;
-	float:left;
-	margin-right: 5px;
-	margin-top:3px;
+	width: 30px;
+	float: left;
+	margin-top: 7px;
 	line-height: 0;
 }
 
@@ -78,9 +73,35 @@
 	padding-left:	8%;
 }
 
-.feedbackTitle {
-	font-size: 16px;
+#provideFeedbackDiv {
+	display: none;
+}
+
+.widgetTitle {
+	font-size: 14px;
 	font-weight: bold;
+	margin-bottom: -8px;
+}
+
+.esriLegendServiceLabel {
+	font-size: 14px !important;
+}
+
+.greyHR {
+	height: 1px;
+	border: none;
+	color: #D6D6D6;
+	background-color: #D6D6D6;
+}
+
+.narrowHR {
+	margin-left: 7%;
+	margin-right: 7%;
+}
+
+.spacedHR {
+	margin-top: 15px;
+	margin-bottom: 15px;
 }
 
 /* hack colors... */
@@ -135,26 +156,30 @@
   width: 100%;
 }
 
-#widget_intersectingCommunity .dijitComboBox .dijitButtonNode {
-	height: 28px;
-}
-
-#widget_intersectingCommunity .dijitArrowButtonContainer {
+#widget_intersectingCommunity .claro .dijitArrowButtonContainer {
   width: 20px;
 }
 
-#widget_intersectingCommunity .dijitComboBox .dijitArrowButtonInner {
+#widget_intersectingCommunity .claro .dijitComboBox .dijitButtonNode {
+	height: 28px;
+}
+
+#widget_intersectingCommunity .claro .dijitComboBox .dijitArrowButtonInner {
   margin: 5px 0 0 1px;
   border: 0;
 }
 
-#widget_intersectingCommunity .dijitSelect {
+#widget_intersectingCommunity .claro .dijitSelect {
   height: 30px;
   width: 100%;
 }
 
 .esriAttributeInspector .atiAttachmentEditor {
 	padding: 0 !important;
+}
+
+.esriAttributeInspector .atiButtons {
+	border: 0 !important;
 }
 
 .hoverRed {
