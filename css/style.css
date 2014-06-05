@@ -10,7 +10,7 @@
 	border:1px solid #DDD;
 	width: 40%;
 	margin: 4px;
-	margin-left: 8px;
+	margin-left: 6px;
 	height: 32px;
 	float: left;
 	padding: 0 5px;
@@ -29,8 +29,8 @@
 }
 
 .statusText p {
-	width:65px;
-	margin-left:15px;
+	width: 65px;
+	margin-left: 15px;
 	font-size: 10px;
 	height: 33px;
 	display: table-cell;
@@ -39,10 +39,10 @@
 }
 
 .mblButton, .mblToggleButton, .mblToggleButtonSelected.Selected {
-	font-weight:bold;
-	background-color:#EFEFF3;
-	background-image:none;
-	border:1px solid #DDD;
+	font-weight: bold;
+	background-color: #EFEFF3;
+	background-image: none;
+	border: 1px solid #DDD;
 	text-align: center;
 	color: black;
 }
@@ -58,6 +58,7 @@
 }
 
 /* Template Picker Overrides */
+
 .templatePicker .grid .dojoxGridRow {
 	display: none;
 }
@@ -81,7 +82,9 @@
 	font-size: 16px;
 	font-weight: bold;
 }
+
 /* hack colors... */
+
 .claro .dijitSelectDisabled, .claro .dijitTextBoxDisabled, .claro .dijitTextBoxDisabled .dijitInputContainer {
 	background-color: #FFF !important;
 }
@@ -91,20 +94,75 @@
 }
 
 .esriPopup .contentPane {
-	/*max-width: 280px !important;*/
-	max-height: 700px !important;
+	max-height: 350px !important;
+	overflow-x: hidden;
 }
 
-#divControl, label, table
-{
+#divControl, label, table {
   float: left;
 }
+
 .commentPane {
 	padding: 0px !important;
 }
+
 .commentButtons {
 	float: right;
 }
+
 .commentButton {
 	margin: 2px;
+	padding: 8px;
+}
+
+/* ComboBox */
+
+.jimu-widget-gfx .dijitComboBox .dijitButtonNode {
+	height: 28px;
+}
+
+.jimu-widget-gfx .dijitArrowButtonContainer {
+  width: 20px;
+}
+
+.jimu-widget-gfx .dijitComboBox .dijitArrowButtonInner {
+  margin: 5px 0 0 1px;
+  border: 0;
+}
+
+.jimu-widget-gfx .dijitSelect {
+  height: 30px;
+  width: 100%;
+}
+
+#widget_intersectingCommunity .dijitComboBox .dijitButtonNode {
+	height: 28px;
+}
+
+#widget_intersectingCommunity .dijitArrowButtonContainer {
+  width: 20px;
+}
+
+#widget_intersectingCommunity .dijitComboBox .dijitArrowButtonInner {
+  margin: 5px 0 0 1px;
+  border: 0;
+}
+
+#widget_intersectingCommunity .dijitSelect {
+  height: 30px;
+  width: 100%;
+}
+
+.esriAttributeInspector .atiAttachmentEditor {
+	padding: 0 !important;
+}
+
+.hoverRed {
+	color: blue;
+	cursor: pointer;
+	text-decoration: none !important;
+}
+
+.hoverRed:hover {
+	color: red;
 }

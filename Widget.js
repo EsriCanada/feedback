@@ -21,10 +21,13 @@ define(
     "dijit/registry",
     "dijit/_WidgetsInTemplateMixin",
     "esri/request",
+    "esri/InfoTemplate",
     "esri/dijit/editing/Editor",
     "esri/dijit/editing/TemplatePicker",
     "esri/dijit/PopupTemplate",
+    "esri/dijit/Popup",
     "esri/layers/FeatureLayer",
+    "esri/layers/ArcGISTiledMapServiceLayer",
     "esri/tasks/query",
     "esri/tasks/QueryTask",
     "esri/tasks/PrintTask",
@@ -67,10 +70,13 @@ define(
     registry,
     _WidgetsInTemplateMixin,
     esriRequest,
+    InfoTemplate,
     Editor,
     TemplatePicker,
     PopupTemplate,
+    Popup,
     FeatureLayer,
+    ArcGISTiledMapServiceLayer,
     Query,
     QueryTask,
     PrintTask,
@@ -96,11 +102,6 @@ define(
     //To create a widget, you need to derive from BaseWidget.
     return declare([BaseWidget, _WidgetsInTemplateMixin], {
 
-      // DemoWidget code goes here
-
-      //please note that this property is be set by the framework when widget is loaded.
-      //templateString: template,
-
       baseClass: 'jimu-widget-gfx',
 
       name: 'GFX',
@@ -118,6 +119,10 @@ define(
         this.inherited(arguments);
         console.log('postCreate');
 
+        // Changes
+        // var popup = new Popup(null, domConstruct.create("div"));
+        // this.map.setInfoWindow(popup);
+
         //console.log(this.appConfig.httpProxy);
         $(this.logoNode).attr('src', this.folderUrl + 'images/CommunityMapsLogo.png');
 
@@ -129,18 +134,36 @@ define(
           if (this.attributeInspectorIsHydrated === false) {
             this.editor.attributeInspector.on("next", lang.hitch(this, function(evt) {
               console.log(evt);
+              // this.createInfoTemplate(curFeature).then(lang.hitch(this, function(template) {
+              // curFeature.setInfoTemplate(template);
               this.dealWithSelectedFeature();
+              // }));
             }));
             this.attributeInspectorIsHydrated = true;
           }
+          // this.createInfoTemplate().then(lang.hitch(this, function(template) {
+          //   array.forEach(this.agolUser.layerInfos, function(layerInfo) {
+          //     var l = this.getLayerFromMap(layerInfo.featureLayer.url);
+          //     l.setInfoTemplate(template);
+          //   }, this);
+          // }));
+          // this.createInfoTemplate(curFeature).then(lang.hitch(this, function(template) {
+          // curFeature.setInfoTemplate(template);
+          // #### DOESN'T WORK... CLEARS THE ATTRIBUTE INSPECTOR curFeature ####
+          // this.map.infoWindow.resize(querySettings.popupSize.w, querySettings.popupSize.h);
           this.dealWithSelectedFeature();
+          // }));
+          // this.dealWithSelectedFeature();
         }));
 
         this.map.infoWindow.on("hide", lang.hitch(this, function() {
           console.log('hide');
-          dom.byId("conversationDiv").innerHTML = "";
-          domStyle.set(dom.byId("submitConversation"), "display", "none");
+          dom.byId("commentDiv").innerHTML = "";
+          dom.byId("attachmentDiv").innerHTML = "";
+          // domStyle.set(dom.byId("submitConversation"), "display", "none");
         }));
+        // Resize infoWindow
+        // this.map.infoWindow.resize(300, 700);
 
       },
 
@@ -155,8 +178,6 @@ define(
         var t = this;
         var assignmentCommunities = [];
 
-
-
         //var loadingIndicator = new mProgress({ size: 12, center: false, startSpinning: true });
         //domStyle.set(loadingIndicator.domNode, { "display": "inline-block" });
         //dojo.byId("_reassignDiv").appendChild(loadingIndicator.domNode);
@@ -166,124 +187,187 @@ define(
         queryTask.execute(query, function(featureSet) {
           if (featureSet.features.length > 1) {
             for (var community in featureSet.features) {
-              if (featureSet.features[community].attributes["gfx_management.sde.DataSource.name_official"] != graphic.attributes.mgmt_data_source) {
-                  assignmentCommunities.push({
-                    "name": featureSet.features[community].attributes["gfx_management.sde.DataSource.name_official"]
-                  });
+              if (featureSet.features[community].attributes["gfx_management.sde.DataSource.name_official"] !== graphic.attributes.mgmt_data_source) {
+                assignmentCommunities.push({
+                  "name": featureSet.features[community].attributes["gfx_management.sde.DataSource.name_official"]
+                });
               }
             }
-            var onChange = function(data) {
-              //console.log(data);
-            }
+
+            // var onChange = function(data) {
+            //   //console.log(data);
+            // };
 
             var placeholder = "Choose new community";
-            if (assignmentCommunities.length == 0)
-            {
+            if (assignmentCommunities.length === 0) {
               placeholder = "No intersecting communities";
             }
 
             _this.createSelectBox(false, "intersectingCommunity", assignmentCommunities, placeholder, _this.communityChosen);
           } else {
+
+            dom.byId("reassignFeedback").value = "No intersecting communitites";
+
             dom.byId("intersectingCommunity").value = "No communitites";
+
           }
           //loadingIndicator.stop();
         }, function(data) {
           console.log(data);
         });
+
       },
 
+      communityChosen: function(community) {
 
-      communityChosen:function(community)
-      {
         this.communityChange = community;
+
       },
 
+      createSelectBox: function(mobile, id, data, placeholder, onChangeFunction) {
 
-      createSelectBox: function(mobile, id, data, placeholder, onChangeFunction){
+        ///Desktop
+        this.items = [];
+        var ctr = 0;
 
-            ///Desktop
-            this.items = [];
-            var ctr = 0;
+        for (var k in data) {
+          this.items.push({
+            'name': data[k].name,
+            id: ctr.toString()
+          });
+          ctr++;
+        }
 
-            for (var k in data)
-            {
-              this.items.push({'name':data[k].name, id:ctr.toString()});
-              ctr++;
-            }
+        var dataItems = {
+          identifier: 'name',
+          label: 'name',
+          items: this.items
+        };
 
-            var dataItems = {
-              identifier: 'name',
-              label: 'name',
-              items: this.items
-            };
+        var store = new ItemFileReadStore({
+          data: dataItems
+        });
+        store.comparatorMap = {};
 
-            var store = new ItemFileReadStore({ data:dataItems  });
-            store.comparatorMap = {};
-
-            store.comparatorMap['name']=function(a,b){
-                if(a<b) return -1;
-                if(a>b) return 1;
-                return 0;
-            };
+        store.comparatorMap['name'] = function(a, b) {
+          if (a < b) return -1;
+          if (a > b) return 1;
+          return 0;
+        };
 
 
-            var _this = this;
-            function completed(items, findResult)
-            {
-              var sortedStore = new Memory({ idProperty: "selector", data:items  });
-              if (!mobile)
-              {
+        var _this = this;
 
-                this.comboBox = new ComboBoxDesktop({
-                    id: id,
-                    name: id,
-                    placeHolder: placeholder,
-                    store: sortedStore,
-                    onChange: function(data)
-                    {
-                      var p = lang.hitch(_this, onChangeFunction, data);
-                      p();
-                      //onChange(location);
-                    },
-                    searchAttr: "name",
-                    selectOnClick: true
-                }, id);
-              }
-              else
-              {
-                this.comboBox = ComboBox({
-                    store: sortedStore,
-                    readonly:false,
-                    placeHolder: placeholder,
-                    onChange: function(data)
-                    {
-                      //onchange(location);
-                    },
-                  value: ''
-                },id);
-              }
-            }
+        function completed(items, findResult) {
+          var sortedStore = new Memory({
+            idProperty: "selector",
+            data: items
+          });
+          if (!mobile) {
+            this.comboBox = new ComboBoxDesktop({
+              id: id,
+              name: id,
+              class: "jimu-widget-gfx",
+              placeHolder: placeholder,
+              store: sortedStore,
+              onChange: function(data) {
+                var p = lang.hitch(_this, onChangeFunction, data);
+                p();
+                //onChange(location);
+              },
+              searchAttr: "name",
+              selectOnClick: true
+            }, id);
+          } else {
+            this.comboBox = new ComboBox({
+              id: id,
+              store: sortedStore,
+              class: "jimu-widget-gfx",
+              readonly: false,
+              placeHolder: placeholder,
+              onChange: function(data) {
+                //onchange(location);
+              },
+              value: ''
+            }, id);
+          }
+        }
 
-            function error(errData, request){
-                console.log("Failed in sorting data.");
-            }
-            var sortAttributes = [{attribute: "name", ascending: true}];
-            store.fetch({onComplete: lang.hitch(this, completed), onError: lang.hitch(this, error), sort: sortAttributes});
+        function error(errData, request) {
+          console.log("Failed in sorting data.");
+        }
+        var sortAttributes = [{
+          attribute: "name",
+          ascending: true
+        }];
+        store.fetch({
+          onComplete: lang.hitch(this, completed),
+          onError: lang.hitch(this, error),
+          sort: sortAttributes
+        });
 
       },
 
       dealWithSelectedFeature: function() {
 
-        //return;
-        //hide the 'globalid' field in the attribute inspector
-        domStyle.set($('.atiAttributes').children().children().children()[4], "display", "none");
+        this.map.infoWindow.resize(this.config.infoWindow.width, this.config.infoWindow.height);
+        var curFeature = this.editor.attributeInspector._currentFeature;
         var atiButtonsDiv = $(".atiButtons")[0];
+        var atiAttributes = $('.atiAttributes')[0];
+
+        domStyle.set($('.atiAttributes').children()[0], "display", "none");
+        domStyle.set($(".atiAttachmentEditor")[0], "display", "none");
+
+        this.createInfoTemplate(curFeature).then(lang.hitch(this, function(template) {
+          domConstruct.create("div", {
+            "innerHTML": template,
+            "class": "feedbackTemplate"
+          }, atiAttributes);
+        }));
+
+        // commentDiv
+        var commentDiv = domConstruct.create("div", {
+          "id": "commentDiv",
+          "class": "commentDiv"
+        }, atiAttributes);
+
+        // attachmentDiv
+        var attachmentDiv = domConstruct.create("div", {
+          "id": "attachmentDiv",
+          "class": "attachmentDiv"
+        }, atiAttributes);
+
         var buttonsDiv = domConstruct.create("div", {
           "class": "buttonsDiv"
         }, atiButtonsDiv);
-        var commentDiv = domConstruct.create("div", {
-          "class": "commentDiv"
+
+        // addCommentDiv
+        domConstruct.create("div", {
+          "class": "addCommentDiv"
         }, atiButtonsDiv);
+
+        // Add Attachments
+        var curLayer;
+        if (curFeature.geometry.type === "point") {
+          curLayer = this.agolUser.layerInfos[0].featureLayer;
+        } else if (curFeature.geometry.type === "polyline") {
+          curLayer = this.agolUser.layerInfos[1].featureLayer;
+        } else {
+          curLayer = this.agolUser.layerInfos[2].featureLayer;
+        }
+
+        var oid = curFeature.attributes.objectid;
+
+        curLayer.queryAttachmentInfos(oid, lang.hitch(this, function(attachments) {
+          var a = attachments;
+          if (a && a.length > 0) {
+            this.populateAttachmentDiv(a, attachmentDiv);
+          }
+        }));
+
+
+        //hide the 'globalid' field in the attribute inspector
+        // domStyle.set($('.atiAttributes').children().children().children()[4], "display", "none");
         if (this.agolUser.isAdmin) {
           this.showFeedbackButtons(buttonsDiv);
         }
@@ -298,7 +382,7 @@ define(
           }));
         } else {
           console.log('queryConversation');
-          this.queryConversation(); //this.editor.attributeInspector._currentFeature);
+          this.queryConversation(commentDiv); //this.editor.attributeInspector._currentFeature);
         }
 
       },
@@ -311,7 +395,7 @@ define(
 
         if (this.map.layerIds.length < 2) {
           var url = "http://server.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer";
-          this.imagery = new esri.layers.ArcGISTiledMapServiceLayer(url, {
+          this.imagery = new ArcGISTiledMapServiceLayer(url, {
             opacity: 0,
             visible: true
           });
@@ -397,11 +481,16 @@ define(
       onSignOut: function() {
 
         console.log('onSignOut');
-        conversationDiv.innerHTML = "";
+        if (dom.byId("commentDiv")) {
+          dom.byId("commentDiv").innerHTML = "";
+        }
+        if (dom.byId("attachmentDiv")) {
+          dom.byId("attachmentDiv").innerHTML = "";
+        }
         domStyle.set("logoPanel", "display", "block");
         domStyle.set(dom.byId("groupInvitePanel"), "display", "none");
         domStyle.set(dom.byId("editorDiv"), "display", "none");
-        domStyle.set(dom.byId("submitConversation"), "display", "none");
+        // domStyle.set(dom.byId("submitConversation"), "display", "none");
         domStyle.set(dom.byId("viewAllFeedback"), "display", "none");
         domStyle.set(dom.byId("toggleAttribute"), "display", "none");
 
@@ -478,21 +567,10 @@ define(
 
       },
 
-
-
-
       declineInvitationFailed: function(response, io) {
 
         console.log(response);
 
-      },
-
-
-      submitConversation: function() {
-        if (this.agolUser.isAdmin)
-        {
-          domStyle.set(dom.byId("editorDiv"), "display", "none");
-        }
       },
 
       engageFeedback: function(credential) {
@@ -501,6 +579,9 @@ define(
           url: this.config.feedbackUrl + "/EngageFeedback?username=" + credential.userId + "&access_token=" + credential.token,
           handleAs: "json"
         });
+
+        // edit JSON to change to custom HTML
+        // use customField': "<b>info</b>" to override attribute inspector
         engageFeedbackHandle.then(lang.hitch(this, this.engageFeedbackHandleSucceeded), lang.hitch(this, this.engageFeedbackHandleFailed));
 
       },
@@ -508,18 +589,20 @@ define(
       engageFeedbackHandleSucceeded: function(response, io) {
 
         this.agolUser = response;
+        // this.addCustomField(this.agolUser);
+
         console.log(this.agolUser);
 
         var layer = new FeatureLayer(this.agolUser.layerInfos[0].featureLayer.url, this.agolUser.layerInfos[0].featureLayer.options);
 
         var linfo = [{
-            layer : layer,
-            title : "Feedback Status"
-          }];
+          layer: layer,
+          title: "Feedback Status"
+        }];
 
         var legendDijit = new Legend({
-          map : this.map,
-          layerInfos : linfo
+          map: this.map,
+          layerInfos: linfo
         }, "legendDiv");
 
         legendDijit.startup();
@@ -568,6 +651,22 @@ define(
 
       },
 
+      addCustomField: function(response) {
+
+        var d = new Deferred();
+
+        array.forEach(response.layerInfos, lang.hitch(this, function(layer) {
+          array.forEach(layer.fieldInfos, lang.hitch(this, function(fi) {
+            fi.customField = "<b>  Custom Field Test</b>";
+          }));
+        }));
+
+        d.resolve(response);
+
+        return d.promise;
+
+      },
+
       engageEditing: function() {
 
         //console.log('engage');
@@ -579,12 +678,6 @@ define(
         var len = this.config.editor.layerInfos.length;
         var layerInfos = this.config.editor.layerInfos;
         */
-
-        if (this.agolUser.isAdmin)
-        {
-          domStyle.set(dom.byId("editorDiv"), "display", "none");
-        }
-
 
         if (!this.agolUser.layerInfos || this.agolUser.layerInfos.length === 0) {
           return;
@@ -630,7 +723,6 @@ define(
 
       editsCompleteHandler: function(result) {
 
-        //console.log(this.credential);
         console.log(result);
 
         if (result.adds.length > 0) {
@@ -686,6 +778,7 @@ define(
       printSuccessful: function(response) {
 
         console.log(response);
+
       },
 
       getLayerFromMap: function(url) {
@@ -714,6 +807,7 @@ define(
 
         settings.layerInfos = this.agolUser.layerInfos;
 
+        // use customField': "<b> this div</b>" to override attribute inspector
 
         settings.map = this.map;
         settings.toolbarVisible = false;
@@ -751,10 +845,15 @@ define(
         //this.editor.templatePicker.attr("rows", 1);
         myEditor = this.editor;
 
+        // var layer = this.getLayerFromMap(featureLayer.url);
+
         domStyle.set(dom.byId("viewAllFeedback"), "display", "block");
         domStyle.set(dom.byId("toggleAttribute"), "display", "block");
 
-
+        // Remove the editorDiv for admin users
+        if (this.agolUser.isAdmin) {
+          domStyle.set(dom.byId("editorDiv"), "display", "none");
+        }
 
         /*
         console.log(this.editor.attributeInspector);
@@ -767,15 +866,13 @@ define(
 
       },
 
-
       populateCommunities: function() {
-
 
         var extentName = [];
         if (this.extents) {
 
           ///Desktop
-          var extentName = [];
+          extentName = [];
           var ctr = 0;
           for (var k in this.extents) {
             extentName.push({
@@ -783,112 +880,28 @@ define(
             });
           }
 
-
           ///START OF Community Selector
           this.createSelectBox(false, "communitySelector", extentName, "Community Selector", this.changeExtent);
-
-
-/*
-          var dataItems = {
-            identifier: 'name',
-            label: 'name',
-            items: extentName
-          };
-
-          var store = new ItemFileReadStore({
-            data: dataItems
-          });
-          store.comparatorMap = {};
-
-          store.comparatorMap['name'] = function(a, b) {
-            if (a < b) return -1;
-            if (a > b) return 1;
-            return 0;
-          };
-
-          function completed(items, findResult) {
-
-            var sortedStore = new Memory({
-              idProperty: "selector",
-              data: items
-            });
-            //if (!t.deviceInfo.isMobile() && !t.deviceInfo.isTablet())
-            //{
-            var _this = this;
-            var comboBox = new ComboBoxDesktop({
-              id: "communitySelector",
-              name: "communitySelector",
-              selectOnClick: true,
-              placeHolder: "Select Community",
-              store: sortedStore,
-              value: "",
-              onChange: function(location) {
-                if (location == "") {
-                  location = "Canada";
-                  dijit.byId(this.id).set("value", location);
-                }
-                _this.onChangeCommunity(location);
-              },
-              selectOnClick: true,
-              searchAttr: "name"
-            }, "communitySelector");
-
-*/
-            /*}
-                    else
-                    {
-                        var comboBox = new dojox.mobile.ComboBox({
-                            store: sortedStore,
-                            readonly:true,
-                            placeHolder: "Select Community",
-                            value: "",
-                            onChange: lang.hitch(this,function(location)
-                            {
-                                if (location == "") {
-                                    location = "Canada";
-                                    dijit.byId(this.id).set("value", location);
-                                }
-                                this.onChangeCommunity(location);
-                            }),
-                            value: ''
-                        }, id);
-                    }
-
-          }
-
-          function error(errData, request) {
-            console.log("Failed in sorting data.");
-          }
-
-          var sortAttributes = [{
-            attribute: "name",
-            ascending: true
-          }];
-
-          store.fetch({
-            onComplete: lang.hitch(this, completed),
-            onError: lang.hitch(this, error),
-            sort: sortAttributes
-          });
-          */
 
         } else {
           console.log("problem");
         }
+
       },
 
-
       getGeocodeExtents: function() {
+
         var qt = new QueryTask("http://gfx.esri.ca/arcgis/rest/services/Communities/Contributors/FeatureServer/1");
         var qp = lang.mixin(new Query(), {
           returnGeometry: false,
           where: "1=1",
           outFields: ["x_min",
-                      "y_min",
-                      "x_max",
-                      "y_max",
-                      "name_common",
-                      "name_official"]
+            "y_min",
+            "x_max",
+            "y_max",
+            "name_common",
+            "name_official"
+          ]
         });
 
         functional.forIn(this.config.contributorDataFields, function(f) {
@@ -929,37 +942,43 @@ define(
       },
 
       onChangeCommunity: function(location) {
+
         this.changeExtent(location);
+
       },
 
       //get the data source name based on alias
       getDataSourceName: function(alias) {
+
         if (alias in this.extents) {
           return this.extents[alias].data_source;
-        } else
+        } else {
           return "CanVec";
+        }
+
       },
 
       //get the alias based on data source name
       getAlias: function(contributor) {
+
         for (var i in this.extents) {
-          if (this.extents[i].data_source == contributor) {
+          if (this.extents[i].data_source === contributor) {
             return i;
           }
         }
         return "Canada";
+
       },
 
       changeExtent: function(community) {
+
         var extentObj = this.extents[community];
         var extent = new Extent(extentObj.extent.xmin, extentObj.extent.ymin, extentObj.extent.xmax, extentObj.extent.ymax, new SpatialReference({
           wkid: 4326
         }));
         this.map.setExtent(extent, true);
+
       },
-
-
-
 
       changeOpacity: function(op) {
 
@@ -1007,8 +1026,10 @@ define(
 
       },
 
-      attributeTableClosed: function(){
+      attributeTableClosed: function() {
+
         console.log("remove");
+
       },
 
       toggleAttribute: function() {
@@ -1042,7 +1063,6 @@ define(
                 }
               }];
 
-
               widget.config.layers = layers;
 
               html.place(widget.domNode, jimuConfig.mainPageId);
@@ -1058,7 +1078,6 @@ define(
 
       },
 
-
       toggleImagery: function() {
 
         //console.log(this.agreeChkNode.checked);
@@ -1073,12 +1092,13 @@ define(
 
       },
 
+      queryConversation: function(div) { //feature
 
-      queryConversation: function() { //feature
-
-        console.log(this.editor.attributeInspector._currentFeature.attributes["globalid"]);
-        var oid = this.editor.attributeInspector._currentFeature.attributes["globalid"];
-        var featureLayer = new FeatureLayer(this.agolUser.conversationUrl);
+        // console.log(this.editor.attributeInspector._currentFeature.attributes["globalid"]);
+        var oid = this.editor.attributeInspector._currentFeature.attributes.globalid;
+        if (!this.commentLayer) {
+          this.commentLayer = new FeatureLayer(this.agolUser.conversationUrl);
+        }
         //var featureLayer = new FeatureLayer(this.config.conversationUrl);
 
         //console.log(feature.attributes[feature.getLayer().objectIdField]);
@@ -1088,70 +1108,118 @@ define(
         var query = new Query();
         query.where = where;
 
-        var field = "globalid";
+        // var field = "globalid";
         var fields = ["*"];
-        var queryTask = new QueryTask(featureLayer.url);
+        var queryTask = new QueryTask(this.commentLayer.url);
         query.returnGeometry = false;
         query.outFields = fields;
+
         queryTask.execute(query).then(lang.hitch(this, function(result) {
-          //console.log(result);
-          var conversationDiv = dom.byId("conversationDiv");
-          var content = [];
-          content.push("<b>Conversation:</b><br/>");
-          array.forEach(result.features, lang.hitch(this, function(feature, index) {
-            console.log(feature.attributes);
-            content.push("<br/>");
-            content.push("<fieldset>");
-            content.push("<legend><b>" + feature.attributes["Creator"] + "</b></legend>");
 
-            var d = new Date(feature.attributes["CreationDate"]);
-            content.push("<i>" + d + "</i>");
-            content.push("<br/><br/>");
-            content.push(feature.attributes["comments"]);
-            content.push("</fieldset>");
-          }));
+          if (result.features && result.features.length > 0) {
+            this.populateCommentDiv(result, div);
+          }
+          // domConstruct.create("br", null, commentDiv);
+          // domConstruct.create("div", {
+          //   "id": "convoButton",
+          //   "class": "jimu-btn submitButton",
+          //   "innerHTML": this.nls.submitComment
+          // }, commentDiv);
 
-          content.push("<br/><textarea id='converse' type='text' style='width:100%'></textarea>");
-          //content.push("<br/><button id='submitConversation' data-dojo-type='dijit/form/Button'>Submit</button>");
-
-          conversationDiv.innerHTML = content.join("");
-
-          domStyle.set(dom.byId("submitConversation"), "display", "inline");
+          // domStyle.set(dom.byId("submitConversation"), "display", "inline");
 
           //console.log(result.features[0].attributes[field]);
         }));
 
       },
 
-      submitConversation: function() {
+      populateCommentDiv: function(result, div) {
 
-        //console.log(dom.byId('converse').value);
-        var comments = dom.byId('converse').value;
-        var obs_guid = this.editor.attributeInspector._currentFeature.attributes["globalid"];
+        var content = [];
+        content.push("<a id='commentToggle' class='hoverRed'>" + this.nls.feedbackComment + " (" + result.features.length + ")</a><div id='comments'><br />");
+        array.forEach(result.features, function(feature) {
+          // console.log(feature.attributes);
+          content.push("<br />");
+          content.push("<b>" + feature.attributes.Creator + "</b>");
+          var d = new Date(feature.attributes.CreationDate);
+          var date = (d.getMonth() + 1) + "/" + d.getDate() + "/" + d.getFullYear();
+          content.push("&nbsp;<i>(" + date + ")</i>");
+          content.push("<br />");
+          content.push(feature.attributes.comments);
+        });
+        content.push("</div>");
+        content.push("<hr>");
+        div.innerHTML = content.join("");
 
-        //var featureLayer = new FeatureLayer(this.config.conversationUrl);
+        domStyle.set(dom.byId("comments"), "display", "none");
+
+        on(dom.byId("commentToggle"), "click", lang.hitch(this, function() {
+          this.toggleDiv(dom.byId("comments"));
+        }));
+
+      },
+
+      populateAttachmentDiv: function(attachments, div) {
+
+        var content = [];
+        content.push("<a id='attachmentToggle' class='hoverRed'>" + this.nls.feedbackAttachment + " (" + attachments.length + ")</a><div id='attachments'><br />");
+        array.forEach(attachments, function(attachment) {
+          // console.log(attachment);
+          content.push("<br />");
+          content.push("<a href='" + attachment.url + "' target=_blank>" + attachment.name + "</a>");
+        });
+        content.push("</div>");
+        content.push("<hr>");
+        div.innerHTML = content.join("");
+
+        domStyle.set(dom.byId("attachments"), "display", "none");
+
+        on(dom.byId("attachmentToggle"), "click", lang.hitch(this, function() {
+          this.toggleDiv(dom.byId("attachments"));
+        }));
+
+      },
+
+      toggleDiv: function(div) {
+
+        if (domStyle.get(div, "display") === "none") {
+          domStyle.set(div, "display", "inline");
+        } else {
+          domStyle.set(div, "display", "none");
+        }
+
+      },
+
+      submitComment: function(comment) {
+
+        var curFeature = this.editor.attributeInspector._currentFeature;
+        var obs_guid = curFeature.attributes.globalid;
+
         var featureLayer = new FeatureLayer(this.agolUser.conversationUrl);
 
-        var conversationRecord = {
-          attributes: {
-            obs_guid: obs_guid,
-            comments: comments
+        var commentRecord = {
+          "attributes": {
+            "obs_guid": obs_guid,
+            "comments": comment
           }
         };
 
-        featureLayer.applyEdits([conversationRecord], null, null).then(lang.hitch(this, function(result) {
+        featureLayer.applyEdits([commentRecord], null, null).then(lang.hitch(this, function(result) {
           console.log(result);
           this.queryConversation();
+          this.map.infoWindow.hide();
         }));
 
-
         var commentUrl = this.config.feedbackUrl + "/Comment?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&obsguid=" + curFeature.attributes.obs_guid;
+
         var changeRequest = esriRequest({
           url: commentUrl,
           handleAs: "json"
         });
 
+        changeRequest.then(lang.hitch(this, function() {
 
+        }));
 
       },
 
@@ -1210,11 +1278,38 @@ define(
 
       showFeedbackButtons: function(buttonsDiv) {
 
-        domStyle.set($(".contentPane")[0], "max-height", "700px");
+        // addCommentButton
+        var addCommentButton = domConstruct.create("div", {
+          "id": "addCommentButton",
+          "class": "feedbackStatusButton mblButton addCommentButton"
+        }, buttonsDiv);
+
+        var addCommentImg = domConstruct.create("div", {
+          "class": "statusImg"
+        }, addCommentButton);
+
+        var addCommentText = domConstruct.create("div", {
+          "class": "statusText",
+          "innerHTML": "<p>" + this.nls.feedbackAddComment + "</p>"
+        }, addCommentButton);
+
+
+        var addCommentSurface = Gfx.createSurface(addCommentImg, 30, 30);
+        var addCommentPath = addCommentSurface.createPath({
+          path: this.config.commentGraphic.path
+        });
+
+        addCommentPath.setFill(this.config.commentGraphic.colour);
+        addCommentPath.setStroke(this.config.commentGraphic.colour);
+        addCommentPath.applyTransform(Gfx.matrix.scale(0.6));
+
+        // Most other buttons dependent on this logic
         var feedbackButtons = this.config.FeedbackWorkflow[this.editor.attributeInspector._currentFeature.attributes.feedback_status];
         console.log(this.editor.attributeInspector._currentFeature.attributes.feedback_status);
+
         // Add appropriate buttons to infoWindow
-        array.forEach(feedbackButtons, lang.hitch(this, function(entry, i) {
+        array.forEach(feedbackButtons, lang.hitch(this, function(entry) {
+
           var feedbackButton = domConstruct.create("div", {
             "class": "feedbackStatusButton mblButton",
             "id": "changeStatus_" + entry
@@ -1236,42 +1331,47 @@ define(
           path.setFill(this.config.buttons[entry].colour);
           path.setStroke(this.config.buttons[entry].colour);
           path.applyTransform(Gfx.matrix.scale(0.6));
+
         }));
 
-
-        feedbackButton = domConstruct.create("div", {
+        // reassignButton
+        var reassignButton = domConstruct.create("div", {
           "id": "reassign",
-          "class":"feedbackStatusButton reassignButton mblButton"
+          "class": "feedbackStatusButton reassignButton mblButton"
         }, buttonsDiv);
 
-
-        feedbackImg = domConstruct.create("div", {
+        var reassignImg = domConstruct.create("div", {
           "class": "statusImg"
-        }, feedbackButton);
+        }, reassignButton);
+
+        var reassignText = domConstruct.create("div", {
+          "class": "statusText",
+          "innerHTML": "<p>" + this.nls.reassignButton + "</p>"
+        }, reassignButton);
+
+        var reassignSurface = Gfx.createSurface(reassignImg, 30, 30);
+        var reassignPath = reassignSurface.createPath({
+          path: this.config.replyGraphic.path
+        });
+        reassignPath.setFill(this.config.replyGraphic.colour);
+        reassignPath.setStroke(this.config.replyGraphic.colour);
+        reassignPath.applyTransform(Gfx.matrix.scale(0.6));
 
 
-        feedbackText = domConstruct.create("div", {
-          "class":"statusText",
-          "innerHTML":"<p>Reassign</p>"
-        }, feedbackButton);
+        $(".addCommentButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
+          this.feedbackComment(-2, buttonsDiv);
+          // this.findIntersectingCommunities(this.editor.attributeInspector._currentFeature);
+          //this.reassign = true;
+        }));
 
-
-        var surface = Gfx.createSurface(feedbackImg, 30, 30);
-        var path = surface.createPath({path:this.config.replyGraphic.path});
-        path.setFill(this.config.replyGraphic.colour);
-        path.setStroke(this.config.replyGraphic.colour);
-        path.applyTransform(Gfx.matrix.scale(0.6));
-
-
-        $(".reassignButton", buttonsDiv).on('click', lang.hitch(this,function(btn){
+        $(".reassignButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
           this.feedbackComment(-1, buttonsDiv);
           this.findIntersectingCommunities(this.editor.attributeInspector._currentFeature);
           //this.reassign = true;
         }));
 
-
         var oc = $(".feedbackStatusButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
-          console.log(btn.currentTarget.innerHTML);
+          // console.log(btn.currentTarget.innerHTML);
           var splitTest = btn.currentTarget.id.split("changeStatus_");
           if (splitTest.length > 1) {
             var status = splitTest[1];
@@ -1280,16 +1380,31 @@ define(
           }
         }));
 
-
-        // Destroy buttons on close
-        var od = this.map.infoWindow.on("hide", function() {
-          oc.remove();
+        // Destroy buttons and div on close
+        var od = this.map.infoWindow.on("hide", lang.hitch(this, function() {
+          if (oc) {
+            oc.remove();
+          }
           od.remove();
           $(".feedbackStatusButton", buttonsDiv).forEach(domConstruct.destroy);
           if (registry.byId('commentPane')) {
             registry.byId('commentPane').destroyRecursive();
           }
-        });
+          $(".addCommentDiv").forEach(domConstruct.destroy);
+          $(".buttonsDiv").forEach(domConstruct.destroy);
+        }));
+        // Destroy buttons on change
+        var ac = this.editor.attributeInspector.on("next", lang.hitch(this, function() {
+          if (oc) {
+            oc.remove();
+          }
+          ac.remove();
+          $(".feedbackStatusButton", buttonsDiv).forEach(domConstruct.destroy);
+          if (registry.byId('commentPane')) {
+            registry.byId('commentPane').destroyRecursive();
+          }
+        }));
+
       },
 
       feedbackComment: function(status, buttonsDiv) {
@@ -1297,16 +1412,16 @@ define(
         if (!registry.byId("commentPane")) {
 
           domStyle.set(buttonsDiv, 'display', 'none');
+
           new ContentPane({
             "class": "commentPane",
             "id": "commentPane"
-          }, $(".commentDiv")[0]);
+          }, $(".addCommentDiv")[0]);
 
 
-          if (status == -1)
-          {
+          if (status === -1) {
             domConstruct.create("input", {
-              "id":"intersectingCommunity",
+              "id": "intersectingCommunity",
               "innerHTML": this.nls.feedbackComment
             }, registry.byId("commentPane").domNode);
           }
@@ -1316,6 +1431,7 @@ define(
             "innerHTML": this.nls.feedbackComment
           }, registry.byId("commentPane").domNode);
           domConstruct.create("br", null, registry.byId("commentPane").domNode);
+
           new mTextArea({
             "id": "fbComment",
             "rows": 3,
@@ -1352,27 +1468,27 @@ define(
             } else {
               comment = "";
             }
-
-            if (status == -1)
-            {
+            // reassign
+            if (status === -1) {
               this.changeCommunity(this.communityChange, comment);
-            }
-            else
-            {
+            // comment only
+            } else if (status === -2) {
+              this.submitComment(comment);
+            // all other buttons
+            } else {
               this.changeFeedback(status, comment);
             }
           }));
 
           var ocan = on(commentCancel, 'click', lang.hitch(this, function() {
             // ocan.remove();
-            domStyle.set($(".commentDiv")[0], 'display', 'none');
+            domStyle.set($(".addCommentDiv")[0], 'display', 'none');
             domStyle.set(buttonsDiv, 'display', 'block');
           }));
 
         } else {
-
           domStyle.set(buttonsDiv, 'display', 'none');
-          domStyle.set($(".commentDiv")[0], 'display', 'block');
+          domStyle.set($(".addCommentDiv")[0], 'display', 'block');
           registry.byId("fbComment").reset();
           registry.byId("fbComment").focus();
         }
@@ -1387,7 +1503,7 @@ define(
           handleAs: "json"
         });
         changeRequest.then(lang.hitch(this, this.changeFeedbackSuccess), lang.hitch(this, this.changeFeedbackFailure)).then(lang.hitch(this, function() {
-          this.map.infoWindow.hide();
+          this.submitComment(comment);
         }));
 
       },
@@ -1400,19 +1516,20 @@ define(
           handleAs: "json"
         });
         changeRequest.then(lang.hitch(this, this.changeFeedbackSuccess), lang.hitch(this, this.changeFeedbackFailure)).then(lang.hitch(this, function() {
-          this.map.infoWindow.hide();
+          this.submitComment(comment);
         }));
       },
 
 
       changeFeedbackSuccess: function(response) {
-        //TODO - Look up name of graphics layer
+
+        // TODO - Look up name of graphics layer
         this.map.getLayer("graphicsLayer2").clearSelection();
         this.map.getLayer("graphicsLayer2").refresh();
         console.log(response);
         console.log('success');
-        var title = "Feedback status submitted";
-        var message = "Feedback status submitted.";
+        // var title = "Feedback status submitted";
+        // var message = "Feedback status submitted.";
         // if (!registry.byId("feedbackStatusDialog")) {
         //      this.createSimpleDialog("feedbackStatus", message, title);
         //    } else {
@@ -1425,6 +1542,29 @@ define(
       changeFeedbackFailure: function(response) {
 
         console.log(response);
+
+      },
+
+      createInfoTemplate: function(f) {
+
+        var d = new Deferred();
+        var att = f.attributes;
+
+        var community = "<b>" + this.nls.feedbackTemplate.community + "</b><br />" + att.mgmt_data_source + "<hr>";
+        var status = this.nls.FeedbackStates[att.feedback_status] + "<hr>";
+        var obs_type = "<b>" + this.nls.feedbackTemplate.obs_type + "</b><br />" + this.nls.FeedbackTypes[att.feedback_obstype] + "<hr>";
+        var desc;
+        if (att.feedback_comments && att.feedback_comments !== null) {
+          desc = "<b>" + this.nls.feedbackTemplate.description + "</b>&nbsp;" + att.feedback_comments + "<hr>";
+        } else {
+          desc = "";
+        }
+        var template = community + status + obs_type + desc;
+
+        // var feedbackTemplate = new InfoTemplate("&nbsp;", template);
+
+        d.resolve(template);
+        return d.promise;
 
       },
 
@@ -1446,18 +1586,17 @@ define(
           "class": "buttons"
         });
 
-        new Button({
+        domConstruct.create("div", {
           "id": name + "OK",
-          "label": "OK"
+          "class": "jimu-btn",
+          "innerHTML": this.nls.commentOK
         });
 
-        domStyle.set(registry.byId(name + "OK").domNode, "width", "60px");
-        domStyle.set(registry.byId(name + "OK").domNode.firstChild, "display", "block");
-        registry.byId(name + "Buttons").addChild(registry.byId(name + "OK"));
+        registry.byId(name + "Buttons").addChild(dom.byId(name + "OK"));
         registry.byId(name + "Dialog").addChild(registry.byId(name + "Pane"));
         registry.byId(name + "Dialog").addChild(registry.byId(name + "Buttons"));
 
-        on(registry.byId(name + "OK"), "click", function() {
+        on(dom.byId(name + "OK"), "click", function() {
           registry.byId(name + "Dialog").hide();
         });
         registry.byId(name + "Dialog").startup();
