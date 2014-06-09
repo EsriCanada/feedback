@@ -15,6 +15,7 @@ define(
     "dojo/Deferred",
     "dojo/dom",
     "dojo/on",
+    "dojo/keys",
     "dojo/dom-style",
     "dojo/query",
     "dojo/dom-construct",
@@ -64,6 +65,7 @@ define(
     Deferred,
     dom,
     on,
+    keys,
     domStyle,
     $,
     domConstruct,
@@ -150,7 +152,6 @@ define(
           // this.createInfoTemplate(curFeature).then(lang.hitch(this, function(template) {
           // curFeature.setInfoTemplate(template);
           // #### DOESN'T WORK... CLEARS THE ATTRIBUTE INSPECTOR curFeature ####
-          // this.map.infoWindow.resize(querySettings.popupSize.w, querySettings.popupSize.h);
           this.dealWithSelectedFeature();
           // }));
           // this.dealWithSelectedFeature();
@@ -158,8 +159,12 @@ define(
 
         this.map.infoWindow.on("hide", lang.hitch(this, function() {
           console.log('hide');
-          dom.byId("commentDiv").innerHTML = "";
-          dom.byId("attachmentDiv").innerHTML = "";
+          if (dom.byId("commentDiv")) {
+            dom.byId("commentDiv").innerHTML = "";
+          }
+          if (dom.byId("attachmentDiv")) {
+            dom.byId("attachmentDiv").innerHTML = "";
+          }
           // domStyle.set(dom.byId("submitConversation"), "display", "none");
         }));
         // Resize infoWindow
@@ -175,16 +180,15 @@ define(
         query.outSR = '';
         query.outFields = ["gfx_management.sde.DataSource.name_official"];
         var queryTask = new QueryTask("http://gfx.esri.ca/arcgis/rest/services/Communities/Contributors/MapServer/0");
-        var t = this;
         var assignmentCommunities = [];
 
         //var loadingIndicator = new mProgress({ size: 12, center: false, startSpinning: true });
         //domStyle.set(loadingIndicator.domNode, { "display": "inline-block" });
         //dojo.byId("_reassignDiv").appendChild(loadingIndicator.domNode);
 
-        var _this = this;
+        // var _this = this;
 
-        queryTask.execute(query, function(featureSet) {
+        queryTask.execute(query, lang.hitch(this, function(featureSet) {
           if (featureSet.features.length > 1) {
             for (var community in featureSet.features) {
               if (featureSet.features[community].attributes["gfx_management.sde.DataSource.name_official"] !== graphic.attributes.mgmt_data_source) {
@@ -198,23 +202,22 @@ define(
             //   //console.log(data);
             // };
 
-            var placeholder = "Choose new community";
+            var placeholder = this.nls.newCommunityPlaceholder;
             if (assignmentCommunities.length === 0) {
               placeholder = "No intersecting communities";
             }
-
-            _this.createSelectBox(false, "intersectingCommunity", assignmentCommunities, placeholder, _this.communityChosen);
+            this.createSelectBox(false, "intersectingCommunity", assignmentCommunities, placeholder, this.communityChosen);
           } else {
 
-            dom.byId("reassignFeedback").value = "No intersecting communitites";
+          dom.byId("reassignFeedback").value = "No intersecting communitites";
+          dom.byId("intersectingCommunity").value = "No communities";
 
-            dom.byId("intersectingCommunity").value = "No communitites";
-
-          }
-          //loadingIndicator.stop();
-        }, function(data) {
-          console.log(data);
-        });
+        }
+        //loadingIndicator.stop();
+      }),
+      function(data) {
+        console.log(data);
+      });
 
       },
 
@@ -277,7 +280,7 @@ define(
               },
               searchAttr: "name",
               selectOnClick: true
-            }, id);
+            }, id + "Div");
           } else {
             this.comboBox = new ComboBox({
               id: id,
@@ -289,8 +292,9 @@ define(
                 //onchange(location);
               },
               value: ''
-            }, id);
+            }, id + "Div");
           }
+          this.styleComboBoxes();
         }
 
         function error(errData, request) {
@@ -308,71 +312,120 @@ define(
 
       },
 
+      styleComboBoxes: function() {
+
+        $(".claro .dijitComboBox .dijitButtonNode").forEach(function(node) {
+          domStyle.set(node, {
+            "height": "28px"
+          });
+        });
+        $(".claro .dijitValidationTextBox .dijitButtonNode").forEach(function(node) {
+          domStyle.set(node, {
+            "height": "28px"
+          });
+        });
+        $(".claro .dijitComboBox .dijitArrowButtonInner").forEach(function(node) {
+          domStyle.set(node, {
+            "margin": "5px 0 0 1px",
+            "border": "0"
+          });
+        });
+        $(".claro .dijitArrowButtonContainer").forEach(function(node) {
+          domStyle.set(node, {
+            "width": "20px"
+          });
+        });
+
+        $(".claro .dijitSelect").forEach(function(node) {
+          domStyle.set(node, {
+            "height": "30px",
+            "width": "100%"
+          });
+        });
+
+      },
+
       dealWithSelectedFeature: function() {
 
-        this.map.infoWindow.resize(this.config.infoWindow.width, this.config.infoWindow.height);
         var curFeature = this.editor.attributeInspector._currentFeature;
         var atiButtonsDiv = $(".atiButtons")[0];
         var atiAttributes = $('.atiAttributes')[0];
 
-        domStyle.set($('.atiAttributes').children()[0], "display", "none");
-        domStyle.set($(".atiAttachmentEditor")[0], "display", "none");
+        var commentDiv, attachmentDiv, buttonsDiv;
+        // If accessing a created feature
+        // NOTE: SOMETIMES GLOBALID NOT BEING GENERATED!!!
+        if (curFeature.attributes.objectid) {
+          this.map.infoWindow.resize(this.config.infoWindow.width, this.config.infoWindow.height);
+          domStyle.set($('.atiAttributes').children()[0], "display", "none");
+          domStyle.set($(".atiAttachmentEditor")[0], "display", "none");
 
-        this.createInfoTemplate(curFeature).then(lang.hitch(this, function(template) {
-          domConstruct.create("div", {
-            "innerHTML": template,
-            "class": "feedbackTemplate"
-          }, atiAttributes);
-        }));
+          this.createInfoTemplate(curFeature).then(lang.hitch(this, function(template) {
+            domConstruct.create("div", {
+              "innerHTML": template,
+              "class": "feedbackTemplate"
+            }, atiAttributes);
+          }));
 
-        // commentDiv
-        var commentDiv = domConstruct.create("div", {
-          "id": "commentDiv",
-          "class": "commentDiv"
-        }, atiAttributes);
+          if (!dom.byId("commentDiv") && !dom.byId("attachmentDiv")) {
+            // commentDiv
+            commentDiv = domConstruct.create("div", {
+              "id": "commentDiv",
+              "class": "commentDiv"
+            }, atiAttributes);
 
-        // attachmentDiv
-        var attachmentDiv = domConstruct.create("div", {
-          "id": "attachmentDiv",
-          "class": "attachmentDiv"
-        }, atiAttributes);
+            // attachmentDiv
+            attachmentDiv = domConstruct.create("div", {
+              "id": "attachmentDiv",
+              "class": "attachmentDiv"
+            }, atiAttributes);
 
-        var buttonsDiv = domConstruct.create("div", {
-          "class": "buttonsDiv"
-        }, atiButtonsDiv);
+            buttonsDiv = domConstruct.create("div", {
+              "class": "buttonsDiv"
+            }, atiButtonsDiv);
 
-        // addCommentDiv
-        domConstruct.create("div", {
-          "class": "addCommentDiv"
-        }, atiButtonsDiv);
-
-        // Add Attachments
-        var curLayer;
-        if (curFeature.geometry.type === "point") {
-          curLayer = this.agolUser.layerInfos[0].featureLayer;
-        } else if (curFeature.geometry.type === "polyline") {
-          curLayer = this.agolUser.layerInfos[1].featureLayer;
-        } else {
-          curLayer = this.agolUser.layerInfos[2].featureLayer;
-        }
-
-        var oid = curFeature.attributes.objectid;
-
-        curLayer.queryAttachmentInfos(oid, lang.hitch(this, function(attachments) {
-          var a = attachments;
-          if (a && a.length > 0) {
-            this.populateAttachmentDiv(a, attachmentDiv);
+            // addCommentDiv
+            domConstruct.create("div", {
+              "class": "addCommentDiv"
+            }, atiButtonsDiv);
+          } else {
+            commentDiv = dom.byId("commentDiv");
+            attachmentDiv = dom.byId("attachmentDiv");
+            buttonsDiv = $(".buttonsDiv")[0];
           }
-        }));
+
+          // Add Attachments
+          var curLayer;
+          if (curFeature.geometry.type === "point") {
+            curLayer = new FeatureLayer(this.agolUser.layerInfos[0].featureLayer.url);
+          } else if (curFeature.geometry.type === "polyline") {
+            curLayer = new FeatureLayer(this.agolUser.layerInfos[1].featureLayer.url);
+          } else {
+            curLayer = new FeatureLayer(this.agolUser.layerInfos[2].featureLayer.url);
+          }
+
+          var oid = curFeature.attributes.objectid;
+
+          curLayer.queryAttachmentInfos(oid, lang.hitch(this, function(attachments) {
+            var a = attachments;
+            if (a && a.length > 0) {
+              this.populateAttachmentDiv(a, attachmentDiv);
+            }
+          }));
 
 
-        //hide the 'globalid' field in the attribute inspector
-        // domStyle.set($('.atiAttributes').children().children().children()[4], "display", "none");
-        if (this.agolUser.isAdmin) {
+          //hide the 'globalid' field in the attribute inspector
           this.showFeedbackButtons(buttonsDiv);
+
+          //this.map.centerAt(this.editor.attributeInspector._currentFeature.geometry);
+          //console.log(registry.findWidgets(this.editor.attributeInspector.attributeTable)[1].displayedValue);
+
+          // If creating a new feature
+        } else {
+          domStyle.set($('.atiAttributes').children().children().children()[1], "display", "none");
+          domStyle.set($('.atiAttributes').children().children().children()[4], "display", "none");
+          this.styleComboBoxes();
         }
-        //this.map.centerAt(this.editor.attributeInspector._currentFeature.geometry);
-        //console.log(registry.findWidgets(this.editor.attributeInspector.attributeTable)[1].displayedValue);
+
         if (registry.findWidgets(this.editor.attributeInspector.attributeTable)[1].displayedValue === "") {
           registry.findWidgets(this.editor.attributeInspector.attributeTable)[1].set("displayedValue", "New Observation");
           this.queryContributor(this.map.infoWindow._location).then(lang.hitch(this, function(result) {
@@ -399,7 +452,7 @@ define(
             opacity: 0,
             visible: true
           });
-          this.map.addLayer(this.imagery, 1);
+          // this.map.addLayer(this.imagery, 1);
         }
 
         var t = this;
@@ -442,6 +495,9 @@ define(
         if (this.attributeTable) {
           this.widgetManager.openWidget(this.attributeTable);
         }
+        if (this.imagery) {
+          this.map.addLayer(this.imagery);
+        }
 
       },
 
@@ -452,6 +508,10 @@ define(
         if (this.attributeTable) {
           this.widgetManager.closeWidget(this.attributeTable);
         }
+        if (!this.map.getLayer("defaultBasemap") && this.basemap) {
+          this.map.addLayer(this.basemap, 0);
+        }
+        this.map.removeLayer(this.imagery);
 
       },
 
@@ -487,12 +547,19 @@ define(
         if (dom.byId("attachmentDiv")) {
           dom.byId("attachmentDiv").innerHTML = "";
         }
+        if (registry.byId("feedbackLegend")) {
+          registry.byId("feedbackLegend").destroy();
+        }
         domStyle.set("logoPanel", "display", "block");
         domStyle.set(dom.byId("groupInvitePanel"), "display", "none");
-        domStyle.set(dom.byId("editorDiv"), "display", "none");
+        domStyle.set(dom.byId("provideFeedbackDiv"), "display", "none");
         // domStyle.set(dom.byId("submitConversation"), "display", "none");
         domStyle.set(dom.byId("viewAllFeedback"), "display", "none");
         domStyle.set(dom.byId("toggleAttribute"), "display", "none");
+        this.destroyButtons();
+        this.destroyEditor();
+
+
 
         //console.log(this.layers);
 
@@ -588,10 +655,17 @@ define(
 
       engageFeedbackHandleSucceeded: function(response, io) {
 
+        // this.agolUser is different the second time around - does not have the same amount of layer info
+        // This current method is problematic if switching users without refreshing the app
+        console.log("response");
+        console.log(response);
         this.agolUser = response;
+        // console.log("agolUser");
+        // console.log(this.agolUser);
+        // if (!this.agolUser.isAdmin) {
+        //   domStyle.set(dom.byId("provideFeedbackDiv"), "display", "block");
+        // }
         // this.addCustomField(this.agolUser);
-
-        console.log(this.agolUser);
 
         var layer = new FeatureLayer(this.agolUser.layerInfos[0].featureLayer.url, this.agolUser.layerInfos[0].featureLayer.options);
 
@@ -600,10 +674,17 @@ define(
           title: "Feedback Status"
         }];
 
-        var legendDijit = new Legend({
-          map: this.map,
-          layerInfos: linfo
-        }, "legendDiv");
+        if (!dom.byId("legendDiv")) {
+          domConstruct.create("div", {
+            id: "legendDiv"
+          }, dom.byId("legendContainer"));
+
+          var legendDijit = new Legend({
+            id: "feedbackLegend",
+            map: this.map,
+            layerInfos: linfo
+          }, "legendDiv");
+        }
 
         legendDijit.startup();
 
@@ -613,17 +694,13 @@ define(
             // domStyle.set("logoPanel", "display", "none");
             //window.opener.OAuthHelper.checkOAuthResponse(window.location.href);
             //Add Editor widget
-            console.log(this.editor);
+            // console.log(this.editor);
             if (this.editor === null || this.editor === undefined) {
               this.engageEditing();
             } else {
               domStyle.set(dom.byId("viewAllFeedback"), "display", "block");
               domStyle.set(dom.byId("toggleAttribute"), "display", "block");
-
-
               this.toggleFeedbackLayersVisibility(true);
-
-
             }
           }
         } else if (response.isAuthenticated === true && response.userInvitation) {
@@ -641,7 +718,7 @@ define(
           //on(dom.byId("acceptInvite"), "click", this.acceptInvite);
           //on(dom.byId("declineInvite"), "click", this.declineInvite);
 
-          console.log(this.inviteId);
+          // console.log(this.inviteId);
         }
 
       },
@@ -702,11 +779,10 @@ define(
               } else {
                 layerInfos[i].featureLayer.options.outFields = ["*"];
               }
-
             }
             layer = new FeatureLayer(featureLayer.url, featureLayer.options);
-            console.log(layer);
-            console.log(this.credential);
+            // console.log(layer);
+            // console.log(this.credential);
             layer.on("edits-complete", lang.hitch(this, this.editsCompleteHandler));
             //layer.on("graphic-add", lang.hitch(this,this.graphicAddHandler));
             layer.setDefinitionExpression("Creator = '" + this.credential.userId + "'");
@@ -723,7 +799,7 @@ define(
 
       editsCompleteHandler: function(result) {
 
-        console.log(result);
+        // console.log(result);
 
         if (result.adds.length > 0) {
           console.log("OID: " + result.adds[0].objectId);
@@ -798,7 +874,7 @@ define(
       initEditor: function() {
 
         var json = this.config.editor;
-        console.log(json);
+        // console.log(json);
         var settings = {};
 
         for (var attr in json) {
@@ -813,13 +889,15 @@ define(
         settings.toolbarVisible = false;
         //mySettings = settings;
 
-        console.log(settings);
+        // console.log(settings);
 
         var layers = [];
 
         //console.log(settings.layerInfos);
+        // This is where the problem is..
         array.forEach(settings.layerInfos, lang.hitch(this, function(layerInfo, index) {
           layers.push(layerInfo.featureLayer);
+          // layers.push(new FeatureLayer(layerInfo.featureLayer.url));
         }));
 
 
@@ -831,38 +909,40 @@ define(
         };
         // console.log(params);
         //params = null;
-        var height = domStyle.get(this.editDiv, "height");
-        console.log(height);
 
-        this.templateStyle = document.createElement('style');
+        if (!dom.byId("editorDiv")) {
+          domConstruct.create("div", {
+            id: "editorDiv",
+            class: "editorDiv"
+          }, dom.byId("editorContainer"));
+        }
+        // var height = 199;
+        // var height = domStyle.get(this.editDiv, "height");
+        // console.log(height);
+
+        // this.templateStyle = document.createElement('style');
         // this.templateStyle.innerHTML = ".jimu-widget-gfx .grid{ height: 350px;}";
-        this.templateStyle.innerHTML = ".jimu-widget-gfx .grid{ height: " + (height - 125) + "px;}";
-        document.body.appendChild(this.templateStyle);
+        // this.templateStyle.innerHTML = ".jimu-widget-gfx .grid { height: " + (height - 125) + "px;}";
+        // document.body.appendChild(this.templateStyle);
 
-        this.editor = new Editor(params, this.editDiv);
+        // this.editor = new Editor(params, this.editDiv);
+        this.editor = new Editor(params, dom.byId("editorDiv"));
 
         this.editor.startup();
         //this.editor.templatePicker.attr("rows", 1);
-        myEditor = this.editor;
+        // myEditor = this.editor;
 
         // var layer = this.getLayerFromMap(featureLayer.url);
 
         domStyle.set(dom.byId("viewAllFeedback"), "display", "block");
         domStyle.set(dom.byId("toggleAttribute"), "display", "block");
 
-        // Remove the editorDiv for admin users
-        if (this.agolUser.isAdmin) {
-          domStyle.set(dom.byId("editorDiv"), "display", "none");
+        // Remove the provideFeedbackDiv for admin users
+        if (!this.agolUser.isAdmin) {
+          domStyle.set(dom.byId("provideFeedbackDiv"), "display", "block");
+        } else {
+          domStyle.set(dom.byId("provideFeedbackDiv"), "display", "none");
         }
-
-        /*
-        console.log(this.editor.attributeInspector);
-
-        this.editor.attributeInspector.on("next", lang.hitch(this, function(evt) {
-          console.log(evt);
-
-        }));*/
-        //console.log(this.editor);
 
       },
 
@@ -982,12 +1062,23 @@ define(
 
       changeOpacity: function(op) {
 
-        if (op == 0) {
-          this.imagery.visible = false;
-          this.imagery.setOpacity(0);
-          return;
+        if (op === 0) {
+          this.map.removeLayer(this.imagery);
+          this.imagery.setOpacity(op);
+          // return;
+        } else if (op === 1) {
+          if (!this.basemap) {
+            this.basemap = this.map.getLayer("defaultBasemap");
+          }
+          this.map.removeLayer(this.basemap);
+          this.imagery.setOpacity(op);
         } else {
-          this.imagery.visible = true;
+          if (!this.map.getLayer(this.imagery.id)) {
+            this.map.addLayer(this.imagery, 1);
+          }
+          if (!this.map.getLayer("defaultBasemap") && this.basemap) {
+            this.map.addLayer(this.basemap, 0);
+          }
           this.imagery.setOpacity(op);
         }
 
@@ -999,13 +1090,14 @@ define(
           this.editor.destroy();
           this.layers.length = 0;
           this.editor = null;
-          this.editDiv = domConstruct.create("div", {
-            style: {
-              width: "100%",
-              height: "100%"
-            }
-          });
-          domConstruct.place(this.editDiv, this.domNode);
+          // var editDiv = domConstruct.create("div", {
+          //   style: {
+          //     width: "100%",
+          //     height: "199px",
+          //     id: "editorDiv"
+          //   }
+          // });
+          // domConstruct.place(editDiv, dom.byId("provideFeedbackDiv"));
         }
 
       },
@@ -1138,7 +1230,6 @@ define(
         var content = [];
         content.push("<a id='commentToggle' class='hoverRed'>" + this.nls.feedbackComment + " (" + result.features.length + ")</a><div id='comments'><br />");
         array.forEach(result.features, function(feature) {
-          // console.log(feature.attributes);
           content.push("<br />");
           content.push("<b>" + feature.attributes.Creator + "</b>");
           var d = new Date(feature.attributes.CreationDate);
@@ -1148,7 +1239,7 @@ define(
           content.push(feature.attributes.comments);
         });
         content.push("</div>");
-        content.push("<hr>");
+        content.push("<hr class='greyHR narrowHR'>");
         div.innerHTML = content.join("");
 
         domStyle.set(dom.byId("comments"), "display", "none");
@@ -1164,12 +1255,11 @@ define(
         var content = [];
         content.push("<a id='attachmentToggle' class='hoverRed'>" + this.nls.feedbackAttachment + " (" + attachments.length + ")</a><div id='attachments'><br />");
         array.forEach(attachments, function(attachment) {
-          // console.log(attachment);
           content.push("<br />");
           content.push("<a href='" + attachment.url + "' target=_blank>" + attachment.name + "</a>");
         });
         content.push("</div>");
-        content.push("<hr>");
+        content.push("<hr class='greyHR narrowHR'>");
         div.innerHTML = content.join("");
 
         domStyle.set(dom.byId("attachments"), "display", "none");
@@ -1190,9 +1280,9 @@ define(
 
       },
 
-      submitComment: function(comment) {
+      submitComment: function(comment, curFeature) {
 
-        var curFeature = this.editor.attributeInspector._currentFeature;
+        this.map.infoWindow.hide();
         var obs_guid = curFeature.attributes.globalid;
 
         var featureLayer = new FeatureLayer(this.agolUser.conversationUrl);
@@ -1207,19 +1297,15 @@ define(
         featureLayer.applyEdits([commentRecord], null, null).then(lang.hitch(this, function(result) {
           console.log(result);
           this.queryConversation();
-          this.map.infoWindow.hide();
         }));
 
-        var commentUrl = this.config.feedbackUrl + "/Comment?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&obsguid=" + curFeature.attributes.obs_guid;
+        var commentUrl = this.config.feedbackUrl + "/Comment?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&obsguid=" + curFeature.attributes.globalid;
 
-        var changeRequest = esriRequest({
-          url: commentUrl,
-          handleAs: "json"
-        });
-
-        changeRequest.then(lang.hitch(this, function() {
-
-        }));
+        // !!! Remove for now as Comment service hasn't been configured !!!
+        // var changeRequest = esriRequest({
+        //   url: commentUrl,
+        //   handleAs: "json"
+        // });
 
       },
 
@@ -1278,6 +1364,7 @@ define(
 
       showFeedbackButtons: function(buttonsDiv) {
 
+        // domConstruct.create("hr class='greyHR narrowHR'", null, buttonsDiv);
         // addCommentButton
         var addCommentButton = domConstruct.create("div", {
           "id": "addCommentButton",
@@ -1303,82 +1390,79 @@ define(
         addCommentPath.setStroke(this.config.commentGraphic.colour);
         addCommentPath.applyTransform(Gfx.matrix.scale(0.6));
 
-        // Most other buttons dependent on this logic
-        var feedbackButtons = this.config.FeedbackWorkflow[this.editor.attributeInspector._currentFeature.attributes.feedback_status];
-        console.log(this.editor.attributeInspector._currentFeature.attributes.feedback_status);
+        $(".addCommentButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
+          this.createCommentsDiv(-2, buttonsDiv);
+        }));
 
-        // Add appropriate buttons to infoWindow
-        array.forEach(feedbackButtons, lang.hitch(this, function(entry) {
+        // Create buttons if admin user
+        if (this.agolUser.isAdmin) {
+          // Most other buttons dependent on this logic
+          var feedbackButtons = this.config.FeedbackWorkflow[this.editor.attributeInspector._currentFeature.attributes.feedback_status];
+          // console.log(this.editor.attributeInspector._currentFeature.attributes.feedback_status);
 
-          var feedbackButton = domConstruct.create("div", {
-            "class": "feedbackStatusButton mblButton",
-            "id": "changeStatus_" + entry
+          // Add appropriate buttons to infoWindow
+          array.forEach(feedbackButtons, lang.hitch(this, function(entry) {
+            var feedbackButton = domConstruct.create("div", {
+              "class": "feedbackStatusButton mblButton",
+              "id": "changeStatus_" + entry
+            }, buttonsDiv);
+
+            var feedbackImg = domConstruct.create("div", {
+              "class": "statusImg"
+            }, feedbackButton);
+
+            var feedbackText = domConstruct.create("div", {
+              "class": "statusText",
+              "innerHTML": "<p>" + this.nls.FeedbackButtonStates[entry] + "</p>"
+            }, feedbackButton);
+
+            var surface = Gfx.createSurface(feedbackImg, 30, 30);
+            var path = surface.createPath({
+              path: this.config.buttons[entry].path
+            });
+            path.setFill(this.config.buttons[entry].colour);
+            path.setStroke(this.config.buttons[entry].colour);
+            path.applyTransform(Gfx.matrix.scale(0.6));
+          }));
+
+          var oc = $(".feedbackStatusButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
+            var splitTest = btn.currentTarget.id.split("changeStatus_");
+            if (splitTest.length > 1) {
+              var status = splitTest[1];
+              this.createCommentsDiv(status, buttonsDiv);
+            }
+          }));
+
+          // reassignButton
+          var reassignButton = domConstruct.create("div", {
+            "id": "reassign",
+            "class": "feedbackStatusButton reassignButton mblButton"
           }, buttonsDiv);
 
-          var feedbackImg = domConstruct.create("div", {
+          var reassignImg = domConstruct.create("div", {
             "class": "statusImg"
-          }, feedbackButton);
+          }, reassignButton);
 
-          var feedbackText = domConstruct.create("div", {
+          var reassignText = domConstruct.create("div", {
             "class": "statusText",
-            "innerHTML": "<p>" + this.nls.FeedbackButtonStates[entry] + "</p>"
-          }, feedbackButton);
+            "innerHTML": "<p>" + this.nls.reassignButton + "</p>"
+          }, reassignButton);
 
-          var surface = Gfx.createSurface(feedbackImg, 30, 30);
-          var path = surface.createPath({
-            path: this.config.buttons[entry].path
+          var reassignSurface = Gfx.createSurface(reassignImg, 30, 30);
+          var reassignPath = reassignSurface.createPath({
+            path: this.config.replyGraphic.path
           });
-          path.setFill(this.config.buttons[entry].colour);
-          path.setStroke(this.config.buttons[entry].colour);
-          path.applyTransform(Gfx.matrix.scale(0.6));
+          reassignPath.setFill(this.config.replyGraphic.colour);
+          reassignPath.setStroke(this.config.replyGraphic.colour);
+          reassignPath.applyTransform(Gfx.matrix.scale(0.6));
 
-        }));
+          $(".reassignButton", buttonsDiv).on('click', lang.hitch(this, function() {
+            this.createCommentsDiv(-1, buttonsDiv);
+            this.findIntersectingCommunities(this.editor.attributeInspector._currentFeature);
+            //this.reassign = true;
+          }));
 
-        // reassignButton
-        var reassignButton = domConstruct.create("div", {
-          "id": "reassign",
-          "class": "feedbackStatusButton reassignButton mblButton"
-        }, buttonsDiv);
-
-        var reassignImg = domConstruct.create("div", {
-          "class": "statusImg"
-        }, reassignButton);
-
-        var reassignText = domConstruct.create("div", {
-          "class": "statusText",
-          "innerHTML": "<p>" + this.nls.reassignButton + "</p>"
-        }, reassignButton);
-
-        var reassignSurface = Gfx.createSurface(reassignImg, 30, 30);
-        var reassignPath = reassignSurface.createPath({
-          path: this.config.replyGraphic.path
-        });
-        reassignPath.setFill(this.config.replyGraphic.colour);
-        reassignPath.setStroke(this.config.replyGraphic.colour);
-        reassignPath.applyTransform(Gfx.matrix.scale(0.6));
-
-
-        $(".addCommentButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
-          this.feedbackComment(-2, buttonsDiv);
-          // this.findIntersectingCommunities(this.editor.attributeInspector._currentFeature);
-          //this.reassign = true;
-        }));
-
-        $(".reassignButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
-          this.feedbackComment(-1, buttonsDiv);
-          this.findIntersectingCommunities(this.editor.attributeInspector._currentFeature);
-          //this.reassign = true;
-        }));
-
-        var oc = $(".feedbackStatusButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
-          // console.log(btn.currentTarget.innerHTML);
-          var splitTest = btn.currentTarget.id.split("changeStatus_");
-          if (splitTest.length > 1) {
-            var status = splitTest[1];
-            this.feedbackComment(status, buttonsDiv);
-            // this.changeFeedback(status);
-          }
-        }));
+        }
 
         // Destroy buttons and div on close
         var od = this.map.infoWindow.on("hide", lang.hitch(this, function() {
@@ -1386,12 +1470,7 @@ define(
             oc.remove();
           }
           od.remove();
-          $(".feedbackStatusButton", buttonsDiv).forEach(domConstruct.destroy);
-          if (registry.byId('commentPane')) {
-            registry.byId('commentPane').destroyRecursive();
-          }
-          $(".addCommentDiv").forEach(domConstruct.destroy);
-          $(".buttonsDiv").forEach(domConstruct.destroy);
+          this.destroyButtons(buttonsDiv);
         }));
         // Destroy buttons on change
         var ac = this.editor.attributeInspector.on("next", lang.hitch(this, function() {
@@ -1407,7 +1486,18 @@ define(
 
       },
 
-      feedbackComment: function(status, buttonsDiv) {
+      destroyButtons: function() {
+
+         $(".feedbackStatusButton", $(".buttonsDiv")[0]).forEach(domConstruct.destroy);
+        if (registry.byId('commentPane')) {
+          registry.byId('commentPane').destroyRecursive();
+        }
+        $(".addCommentDiv").forEach(domConstruct.destroy);
+        $(".buttonsDiv").forEach(domConstruct.destroy);
+
+      },
+
+      createCommentsDiv: function(status, buttonsDiv) {
 
         if (!registry.byId("commentPane")) {
 
@@ -1418,12 +1508,25 @@ define(
             "id": "commentPane"
           }, $(".addCommentDiv")[0]);
 
+          domConstruct.create("div", {
+            "id": "reassignDiv"
+          }, registry.byId("commentPane").domNode);
 
-          if (status === -1) {
-            domConstruct.create("input", {
-              "id": "intersectingCommunity",
-              "innerHTML": this.nls.feedbackComment
-            }, registry.byId("commentPane").domNode);
+          domConstruct.create("label", {
+            "for": "intersectingCommunityDiv",
+            "innerHTML": this.nls.newCommunity
+          }, dom.byId("reassignDiv"));
+          domConstruct.create("br", null, dom.byId("reassignDiv"));
+          domConstruct.create("br", null, dom.byId("reassignDiv"));
+          domConstruct.create("div", {
+            "id": "intersectingCommunityDiv"
+            // "innerHTML": this.nls.feedbackComment
+          }, dom.byId("reassignDiv"));
+          domConstruct.create("br", null, dom.byId("reassignDiv"));
+          domConstruct.create("br", null, dom.byId("reassignDiv"));
+
+          if (status !== -1) {
+            domStyle.set(dom.byId("reassignDiv"), 'display', 'none');
           }
 
           domConstruct.create("label", {
@@ -1460,42 +1563,41 @@ define(
 
           registry.byId("fbComment").focus();
 
+
           var ook = on(commentOK, 'click', lang.hitch(this, function() {
             ook.remove();
-            var comment;
-            if (registry.byId("fbComment").value && registry.byId("fbComment").value.length > 0) {
-              comment = registry.byId("fbComment").value;
-            } else {
-              comment = "";
-            }
-            // reassign
-            if (status === -1) {
-              this.changeCommunity(this.communityChange, comment);
-            // comment only
-            } else if (status === -2) {
-              this.submitComment(comment);
-            // all other buttons
-            } else {
-              this.changeFeedback(status, comment);
-            }
+            this.sendComment(status);
+
           }));
+
+          // var oe = on(registry.byId("fbComment"), "keydown", lang.hitch(this, function(e) {
+          //   if (e.keyCode === keys.ENTER) {
+          //     oe.remove();
+          //     this.sendComment();
+          //   }
+          // }));
 
           var ocan = on(commentCancel, 'click', lang.hitch(this, function() {
             // ocan.remove();
             domStyle.set($(".addCommentDiv")[0], 'display', 'none');
+            domStyle.set(dom.byId("reassignDiv"), 'display', 'none');
             domStyle.set(buttonsDiv, 'display', 'block');
           }));
 
         } else {
           domStyle.set(buttonsDiv, 'display', 'none');
           domStyle.set($(".addCommentDiv")[0], 'display', 'block');
+          if (status === -1) {
+             domStyle.set(dom.byId("reassignDiv"), 'display', 'block');
+          }
           registry.byId("fbComment").reset();
           registry.byId("fbComment").focus();
         }
       },
 
-      changeFeedback: function(status, comment) {
+      sendComment: function(status) {
 
+/*
         var curFeature = this.editor.attributeInspector._currentFeature;
         var changeURL = this.config.feedbackUrl + "/ChangeFeedback?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&status=" + status + "&email=" + this.credential.email + "&comment=" + comment + "&obsguid=" + curFeature.attributes.obs_guid + "&community=" + curFeature.attributes.community;
         var changeRequest = esriRequest({
@@ -1505,28 +1607,46 @@ define(
         changeRequest.then(lang.hitch(this, this.changeFeedbackSuccess), lang.hitch(this, this.changeFeedbackFailure)).then(lang.hitch(this, function() {
           this.submitComment(comment);
         }));
+*/
+        var comment;
+        if (registry.byId("fbComment").value && registry.byId("fbComment").value.length > 0) {
+          comment = registry.byId("fbComment").value;
+        } else {
+          comment = "";
+        }
+        // reassign
+        if (status === -1) {
+          this.changeCommunity(this.communityChange, comment);
+        // comment only
+        } else if (status === -2) {
+          this.submitComment(comment, this.editor.attributeInspector._currentFeature);
+        // all other buttons
+        } else {
+          this.changeFeedback(status, comment);
+        }
 
       },
 
-      changeCommunity: function(community, comment) {
+      changeFeedback: function(status, comment) {
+
         var curFeature = this.editor.attributeInspector._currentFeature;
-        var changeURL = this.config.feedbackUrl + "/ChangeCommunity?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&community=" + community;
+        var changeURL = this.config.feedbackUrl + "/ChangeFeedback?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&status=" + status + "&email=" + this.credential.email + "&comment=" + comment + "&obsguid=" + curFeature.attributes.globalid + "&community=" + curFeature.attributes.community;
         var changeRequest = esriRequest({
           url: changeURL,
           handleAs: "json"
         });
         changeRequest.then(lang.hitch(this, this.changeFeedbackSuccess), lang.hitch(this, this.changeFeedbackFailure)).then(lang.hitch(this, function() {
-          this.submitComment(comment);
+          this.submitComment(comment, curFeature);
         }));
-      },
 
+      },
 
       changeFeedbackSuccess: function(response) {
 
         // TODO - Look up name of graphics layer
         this.map.getLayer("graphicsLayer2").clearSelection();
         this.map.getLayer("graphicsLayer2").refresh();
-        console.log(response);
+        // console.log(response);
         console.log('success');
         // var title = "Feedback status submitted";
         // var message = "Feedback status submitted.";
@@ -1545,17 +1665,58 @@ define(
 
       },
 
+      changeCommunity: function(community, comment) {
+
+        var curFeature = this.editor.attributeInspector._currentFeature;
+        var changeURL = this.config.feedbackUrl + "/ChangeCommunity?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&community=" + community;
+        var changeRequest = esriRequest({
+          url: changeURL,
+          handleAs: "json"
+        });
+        changeRequest.then(lang.hitch(this, this.changeCommunitySuccess), lang.hitch(this, this.changeCommunityFailure)).then(lang.hitch(this, function() {
+          this.submitComment(comment, curFeature);
+        }));
+
+      },
+
+      changeCommunitySuccess: function(response) {
+
+        // TODO - Look up name of graphics layer
+        array.forEach(this.agolUser.layerInfos, function(layerInfo) {
+          this.map.getLayer(layerInfo.featureLayer.id).refresh();
+        }, this);
+        // console.log(response);
+        console.log('CommunitySuccess');
+        // var title = "Community status submitted";
+        // var message = "Community status submitted.";
+        // if (!registry.byId("CommunityStatusDialog")) {
+        //      this.createSimpleDialog("CommunityStatus", message, title);
+        //    } else {
+        //      registry.byId("CommunityStatusDialog").set("content", message);
+        //    }
+        //    registry.byId("CommunityStatusDialog").show();
+
+      },
+
+      changeCommunityFailure: function(response) {
+
+        console.log(response);
+
+      },
+
+
+
       createInfoTemplate: function(f) {
 
         var d = new Deferred();
         var att = f.attributes;
 
-        var community = "<b>" + this.nls.feedbackTemplate.community + "</b><br />" + att.mgmt_data_source + "<hr>";
-        var status = this.nls.FeedbackStates[att.feedback_status] + "<hr>";
-        var obs_type = "<b>" + this.nls.feedbackTemplate.obs_type + "</b><br />" + this.nls.FeedbackTypes[att.feedback_obstype] + "<hr>";
+        var community = "<b>" + this.nls.feedbackTemplate.community + "</b><br />" + att.mgmt_data_source + "<hr class='greyHR narrowHR'>";
+        var status = this.nls.FeedbackStates[att.feedback_status] + "<hr class='greyHR narrowHR'>";
+        var obs_type = "<b>" + this.nls.feedbackTemplate.obs_type + "</b><br />" + this.nls.FeedbackTypes[att.feedback_obstype] + "<hr class='greyHR narrowHR'>";
         var desc;
         if (att.feedback_comments && att.feedback_comments !== null) {
-          desc = "<b>" + this.nls.feedbackTemplate.description + "</b>&nbsp;" + att.feedback_comments + "<hr>";
+          desc = "<b>" + this.nls.feedbackTemplate.description + "</b>&nbsp;" + att.feedback_comments + "<hr class='greyHR narrowHR'>";
         } else {
           desc = "";
         }
