@@ -6,6 +6,8 @@ define({
     imagery: "Imagery",
     sliderLabel: "Imagery Slider",
     selectCommunity: "Select A Community:",
+    newCommunity: "Choose a New Community:",
+    newCommunityPlaceholder: "Choose community",
     provideFeedback: "Provide Feedback:",
     toggleAllFeedback: "View Feedback from Others",
     toggleAttribute: "View Attribute Inspector",

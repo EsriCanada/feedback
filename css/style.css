@@ -191,3 +191,11 @@
 .hoverRed:hover {
 	color: red;
 }
+
+.editorDiv {
+	width: 100%;
+}
+
+.jimu-widget-gfx .grid {
+	height: 74px;
+}
