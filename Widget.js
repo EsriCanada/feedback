@@ -1957,11 +1957,6 @@ define(
             ook.remove();
           }
         }));
-
-      },
-
-      formIsValid: function() {
-
         if (registry.byId("firstName").isValid() && registry.byId("lastName").isValid() && registry.byId("loginEmail").isValid()) {
           return true;
         } else {
