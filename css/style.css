@@ -83,6 +83,10 @@
 	margin-bottom: -8px;
 }
 
+.signedIn {
+	display: none;
+}
+
 .esriLegendServiceLabel {
 	font-size: 14px !important;
 }
@@ -199,3 +203,75 @@
 .jimu-widget-gfx .grid {
 	height: 74px;
 }
+
+.jimu-widget-gfx .templatePicker .dojoxGrid {
+	padding-left: 7%;
+	padding-top: 2%;
+}
+
+.sliderDijit {
+	width: 165px;
+}
+
+.noCommentDiv {
+	background-color: #F04A4A;
+	color: white;
+}
+
+/* About Styles */
+
+/*.jimu-widget-gfx .overlay {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  opacity: 0;
+}*/
+
+.loginPane {
+	background-color: white;
+  z-index: 999;
+  width: 340px;
+  height: 271px;
+  position: absolute;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0px 0px 8px 2px rgba(0, 0, 0, 0.4);
+  text-align: center;
+}
+
+.jimu-widget-gfx .logo {
+  margin: auto;
+  display: block;
+  width: 40px;
+  margin-top:27px;
+  margin-bottom: 25px;
+}
+
+.jimu-widget-gfx .divTitle, .jimu-widget-gfx .version {
+  text-align: center;
+  margin-top: 20px;
+  color: #686868;
+}
+
+.jimu-widget-gfx .divTitle {
+  font-size: 16px;
+}
+
+.jimu-widget-gfx .version {
+  font-size: 14px;
+}
+
+.jimu-widget-gfx .line {
+  margin: 20px 10px;
+  height: 0;
+  border-bottom: 1px dashed;
+}
+
+/*.jimu-widget-gfx .jimu-btn {
+  float: none;
+  margin: auto;
+  width: 84px;
+}*/
+

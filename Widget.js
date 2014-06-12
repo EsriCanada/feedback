@@ -7,9 +7,11 @@ define(
     "jimu/portalUtils",
     "jimu/dijit/CheckBox",
     "jimu/tokenUtils",
+    "jimu/dijit/IFramePane",
     "dojo/_base/html",
     "dojo/_base/array",
     "dojo/_base/declare",
+    "dojo/_base/event",
     "dojo/_base/lang",
     "dojo/aspect",
     "dojo/Deferred",
@@ -42,6 +44,8 @@ define(
     "dijit/layout/ContentPane",
     "dijit/form/Button",
     "dijit/form/HorizontalSlider",
+    "dijit/form/Form",
+    "dijit/form/ValidationTextBox",
     "dijit/form/ComboBox",
     "dojox/mobile/ComboBox",
     "dojo/data/ItemFileReadStore",
@@ -57,9 +61,11 @@ define(
     portalUtils,
     CheckBox,
     tokenUtils,
+    IFramePane,
     html,
     array,
     declare,
+    event,
     lang,
     aspect,
     Deferred,
@@ -92,6 +98,8 @@ define(
     ContentPane,
     Button,
     HorizontalSlider,
+    Form,
+    ValidationTextBox,
     ComboBoxDesktop,
     ComboBox,
     ItemFileReadStore,
@@ -347,6 +355,7 @@ define(
 
       dealWithSelectedFeature: function() {
 
+        this.editor.attributeInspector.refresh();
         var curFeature = this.editor.attributeInspector._currentFeature;
         var atiButtonsDiv = $(".atiButtons")[0];
         var atiAttributes = $('.atiAttributes')[0];
@@ -383,7 +392,7 @@ define(
               "class": "buttonsDiv"
             }, atiButtonsDiv);
 
-            // addCommentDiv
+            // addComfmentDiv
             domConstruct.create("div", {
               "class": "addCommentDiv"
             }, atiButtonsDiv);
@@ -396,11 +405,11 @@ define(
           // Add Attachments
           var curLayer;
           if (curFeature.geometry.type === "point") {
-            curLayer = new FeatureLayer(this.agolUser.layerInfos[0].featureLayer.url);
+            curLayer = this.agolUser.layerInfos[0].featureLayer;
           } else if (curFeature.geometry.type === "polyline") {
-            curLayer = new FeatureLayer(this.agolUser.layerInfos[1].featureLayer.url);
+            curLayer = this.agolUser.layerInfos[1].featureLayer;
           } else {
-            curLayer = new FeatureLayer(this.agolUser.layerInfos[2].featureLayer.url);
+            curLayer = this.agolUser.layerInfos[2].featureLayer;
           }
 
           var oid = curFeature.attributes.objectid;
@@ -423,6 +432,8 @@ define(
         } else {
           domStyle.set($('.atiAttributes').children().children().children()[1], "display", "none");
           domStyle.set($('.atiAttributes').children().children().children()[4], "display", "none");
+          this.createEditorButtons();
+
           this.styleComboBoxes();
         }
 
@@ -437,6 +448,51 @@ define(
           console.log('queryConversation');
           this.queryConversation(commentDiv); //this.editor.attributeInspector._currentFeature);
         }
+
+      },
+
+      createEditorButtons: function() {
+
+        if (!dom.byId("editorButtons")) {
+          domConstruct.create("div", {
+            "id": "editorButtons",
+            "class": "commentButtons editorButtons"
+          }, $(".contentPane")[0]);
+
+          domConstruct.create("br", null, dom.byId("editorButtons"));
+
+          var editOK = domConstruct.create("div", {
+            "class": "jimu-btn commentButton editorButtons",
+            "innerHTML": this.nls.commentOK
+          }, dom.byId("editorButtons"));
+
+          var editCancel = domConstruct.create("div", {
+            "class": "jimu-btn commentButton editorButtons",
+            "innerHTML": this.nls.commentCancel
+          }, dom.byId("editorButtons"));
+          this.editorProp = false;
+
+          var ook = on(editOK, "click", lang.hitch(this, function() {
+            this.editorProp = true;
+            this.map.infoWindow.hide();
+            $(".editorButtons").forEach(domConstruct.destroy);
+            ook.remove();
+          }));
+
+          // var ocan = on(editCancel, "click", lang.hitch(this, function() {
+          //   this.map.infoWindow.hide();
+          //   ocan.remove();
+          // }));
+
+          // aspect.before(this.map.infoWindow, "hide", lang.hitch(this, function() {
+          //   if (!this.editorProp) {
+          //     // event.stop(e);
+          //   }
+          // }));
+
+
+        }
+
 
       },
 
@@ -456,13 +512,13 @@ define(
         }
 
         var t = this;
-        var slider = new HorizontalSlider({
+        new HorizontalSlider({
           name: "slider",
+          class: "sliderDijit",
           value: 0,
           minimum: 0,
           maximum: 1,
           intermediateChanges: true,
-          style: "width:175px;",
           onChange: function(value) {
             t.changeOpacity(value);
           }
@@ -484,15 +540,16 @@ define(
           //this.onSignIn(tokenUtils.getCredential());
         } else {
           //this.onSignOut();
+          this.userLogin();
           console.log('nay');
-          tokenUtils.signIn(this.appConfig.portalUrl, this.appConfig.appId);
+          // tokenUtils.signIn(this.appConfig.portalUrl, this.appConfig.appId);
         }
 
         if (this.layers.length > 0) {
           this.toggleFeedbackLayersVisibility(true);
         }
 
-        if (this.attributeTable) {
+        if (this.attributeTable  && dom.byId("toggleAttribute").checked) {
           this.widgetManager.openWidget(this.attributeTable);
         }
         if (this.imagery) {
@@ -504,14 +561,14 @@ define(
       onClose: function() {
 
         console.log('onClose');
-        this.toggleFeedbackLayersVisibility(false);
+        // this.toggleFeedbackLayersVisibility(false);
         if (this.attributeTable) {
           this.widgetManager.closeWidget(this.attributeTable);
         }
-        if (!this.map.getLayer("defaultBasemap") && this.basemap) {
-          this.map.addLayer(this.basemap, 0);
-        }
-        this.map.removeLayer(this.imagery);
+        // if (!this.map.getLayer("defaultBasemap") && this.basemap) {
+        //   this.map.addLayer(this.basemap, 0);
+        // }
+        // this.map.removeLayer(this.imagery);
 
       },
 
@@ -535,6 +592,7 @@ define(
         //domStyle.set("logoPanel", "display", "none");
         this.credential = credential;
         this.engageFeedback(credential);
+        domStyle.set($(".signedIn")[0], "display", "block");
 
       },
 
@@ -556,10 +614,12 @@ define(
         // domStyle.set(dom.byId("submitConversation"), "display", "none");
         domStyle.set(dom.byId("viewAllFeedback"), "display", "none");
         domStyle.set(dom.byId("toggleAttribute"), "display", "none");
+        domStyle.set($(".signedIn")[0], "display", "none");
         this.destroyButtons();
         this.destroyEditor();
+        this.removeFeedbackLayers();
 
-
+        this.attributeInspectorIsHydrated = false;
 
         //console.log(this.layers);
 
@@ -732,11 +792,11 @@ define(
 
         var d = new Deferred();
 
-        array.forEach(response.layerInfos, lang.hitch(this, function(layer) {
-          array.forEach(layer.fieldInfos, lang.hitch(this, function(fi) {
+        array.forEach(response.layerInfos, function(layer) {
+          array.forEach(layer.fieldInfos, function(fi) {
             fi.customField = "<b>  Custom Field Test</b>";
-          }));
-        }));
+          }, this);
+        }, this);
 
         d.resolve(response);
 
@@ -794,6 +854,26 @@ define(
           }
         }
         this.initEditor();
+
+      },
+
+      removeFeedbackLayers: function() {
+
+        array.forEach(this.agolUser.layerInfos, function(layerInfo) {
+          var layer = this.getLayerFromMap(layerInfo.featureLayer.url);
+          var id = layer.id;
+          if (layer) {
+            this.map.removeLayer(this.map.getLayer(id));
+          }
+        }, this);
+
+      },
+
+      refreshFeedbackLayer: function(layer) {
+
+        var id = layer.id;
+        this.map.getLayer(id).clearSelection();
+        this.map.getLayer(id).refresh();
 
       },
 
@@ -895,10 +975,10 @@ define(
 
         //console.log(settings.layerInfos);
         // This is where the problem is..
-        array.forEach(settings.layerInfos, lang.hitch(this, function(layerInfo, index) {
+        array.forEach(settings.layerInfos, function(layerInfo, index) {
           layers.push(layerInfo.featureLayer);
           // layers.push(new FeatureLayer(layerInfo.featureLayer.url));
-        }));
+        }, this);
 
 
         // console.log(layers);
@@ -993,7 +1073,7 @@ define(
         req.then(lang.hitch(this, function(results) {
           if (results && results.features && results.features.length > 0) {
 
-            array.forEach(results.features, lang.hitch(this, function(f, i) {
+            array.forEach(results.features, function(f, i) {
               extent[f.attributes["name_common"]] = {
                 "data_source": f.attributes["name_official"],
                 "extent": {
@@ -1003,7 +1083,7 @@ define(
                   "ymax": f.attributes["y_max"]
                 }
               };
-            }));
+            }, this);
             if (extent.Canada) {
               extent.Canada.extent.xmin = -136;
               extent.Canada.extent.xmax = -45;
@@ -1290,6 +1370,7 @@ define(
         var commentRecord = {
           "attributes": {
             "obs_guid": obs_guid,
+            "Creator": this.credential.userId,
             "comments": comment
           }
         };
@@ -1356,9 +1437,9 @@ define(
 
       toggleFeedbackLayersVisibility: function(visible) {
 
-        array.forEach(this.layers, lang.hitch(this, function(item, index) {
+        array.forEach(this.layers, function(item, index) {
           item.featureLayer.setVisibility(visible);
-        }));
+        }, this);
 
       },
 
@@ -1401,7 +1482,7 @@ define(
           // console.log(this.editor.attributeInspector._currentFeature.attributes.feedback_status);
 
           // Add appropriate buttons to infoWindow
-          array.forEach(feedbackButtons, lang.hitch(this, function(entry) {
+          array.forEach(feedbackButtons, function(entry) {
             var feedbackButton = domConstruct.create("div", {
               "class": "feedbackStatusButton mblButton",
               "id": "changeStatus_" + entry
@@ -1423,7 +1504,7 @@ define(
             path.setFill(this.config.buttons[entry].colour);
             path.setStroke(this.config.buttons[entry].colour);
             path.applyTransform(Gfx.matrix.scale(0.6));
-          }));
+          }, this);
 
           var oc = $(".feedbackStatusButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
             var splitTest = btn.currentTarget.id.split("changeStatus_");
@@ -1517,7 +1598,6 @@ define(
             "innerHTML": this.nls.newCommunity
           }, dom.byId("reassignDiv"));
           domConstruct.create("br", null, dom.byId("reassignDiv"));
-          domConstruct.create("br", null, dom.byId("reassignDiv"));
           domConstruct.create("div", {
             "id": "intersectingCommunityDiv"
             // "innerHTML": this.nls.feedbackComment
@@ -1565,9 +1645,13 @@ define(
 
 
           var ook = on(commentOK, 'click', lang.hitch(this, function() {
-            ook.remove();
-            this.sendComment(status);
 
+            if (registry.byId("fbComment").value && registry.byId("fbComment").value.length > 0) {
+              this.sendComment(status);
+              ook.remove();
+            } else {
+              this.noCommentDiv();
+            }
           }));
 
           // var oe = on(registry.byId("fbComment"), "keydown", lang.hitch(this, function(e) {
@@ -1594,15 +1678,9 @@ define(
           registry.byId("fbComment").focus();
         }
       },
-
       sendComment: function(status) {
 
-        var comment;
-        if (registry.byId("fbComment").value && registry.byId("fbComment").value.length > 0) {
-          comment = registry.byId("fbComment").value;
-        } else {
-          comment = "";
-        }
+        var comment = registry.byId("fbComment").value;
         // reassign
         if (status === -1) {
           this.changeCommunity(this.communityChange, comment);
@@ -1613,6 +1691,19 @@ define(
         } else {
           this.changeFeedback(status, comment);
         }
+
+      },
+
+      noCommentDiv: function() {
+
+        // if(!dom.byId("noCommentDiv")) {
+        //   var noComment = domConstruct.create("div", {
+        //     id: "noCommentDiv",
+        //     class: "noCommentDiv"
+        //   }, dom.byId("commentPane"));
+        //   noComment.innerHTML = "<p>" + this.nls.noComment + "</p>";
+        // }
+        alert(this.nls.noComment);
 
       },
 
@@ -1632,9 +1723,8 @@ define(
 
       changeFeedbackSuccess: function(response) {
 
-        // TODO - Look up name of graphics layer
-        this.map.getLayer("graphicsLayer2").clearSelection();
-        this.map.getLayer("graphicsLayer2").refresh();
+        var layer = this.editor.attributeInspector._currentFeature._graphicsLayer;
+        this.refreshFeedbackLayer(layer);
         // console.log(response);
         console.log('success');
         // var title = "Feedback status submitted";
@@ -1671,9 +1761,8 @@ define(
       changeCommunitySuccess: function(response) {
 
         // TODO - Look up name of graphics layer
-        array.forEach(this.agolUser.layerInfos, function(layerInfo) {
-          this.map.getLayer(layerInfo.featureLayer.id).refresh();
-        }, this);
+        var layer = this.editor.attributeInspector._currentFeature._graphicsLayer;
+        this.refreshFeedbackLayer(layer);
         // console.log(response);
         console.log('CommunitySuccess');
         // var title = "Community status submitted";
@@ -1750,6 +1839,153 @@ define(
           registry.byId(name + "Dialog").hide();
         });
         registry.byId(name + "Dialog").startup();
+
+      },
+
+      userLogin: function() {
+
+        if (!dom.byId("loginSelect")) {
+
+          var content = this.nls.login.intro + "<br /><br />" + this.nls.login.select + "<br /><br />" + this.nls.login.create + "<br /><br />",
+
+          loginPane = domConstruct.create("div", {
+            "id": "loginSelect",
+            "class": "login loginPane",
+            "innerHTML": content
+          }, dom.byId("jimu-layout-manager")),
+
+          loginSelect = domConstruct.create("div", {
+            "class": "jimu-btn login loginButtons",
+            "innerHTML": this.nls.login.click
+          }, loginPane),
+
+          loginCreate = domConstruct.create("div", {
+            "class": "jimu-btn login loginButtons",
+            "innerHTML": this.nls.login.click
+          }, loginPane),
+
+          box = html.getMarginBox(jimuConfig.layoutId),
+          contentBox = html.getMarginBox(dom.byId("loginSelect")),
+          position = {};
+
+          position.width = contentBox.w;
+          position.height = contentBox.h;
+          position.left = (box.w - position.width)/2;
+          position.top = (box.h - position.height)/2;
+
+          domStyle.set(dom.byId("loginSelect"), {
+            left: position.left + 'px',
+            top: position.top + 'px'
+          });
+
+          var os = on(loginSelect, "click", lang.hitch(this, function() {
+            $(".login").forEach(domConstruct.destroy);
+            os.remove();
+            tokenUtils.signIn(this.appConfig.portalUrl, this.appConfig.appId);
+          }));
+
+          var oc = on(loginCreate, "click", lang.hitch(this, function() {
+            $(".loginButtons").forEach(domConstruct.destroy);
+            loginPane.innerHTML = "";
+            oc.remove();
+            this.createNewAccount();
+          }));
+        }
+
+      },
+
+      createNewAccount: function() {
+
+        domConstruct.create("label", {
+            "for": "firstName",
+            "innerHTML": this.nls.login.firstName
+        }, dom.byId("loginSelect"));
+        domConstruct.create("br", null, dom.byId("loginSelect"));
+        var firstName = new ValidationTextBox({
+            "id": "firstName",
+            "class": "login",
+            // "placeHolder": ,
+            "regExp": "\\S*",
+            "required": true
+            // "invalidMessage":
+        });
+        domConstruct.place(firstName.domNode, dom.byId("loginSelect"));
+        domConstruct.create("br", null, dom.byId("loginSelect"));
+
+        domConstruct.create("label", {
+            "for": "lastName",
+            "innerHTML": this.nls.login.lastName
+        }, dom.byId("loginSelect"));
+        domConstruct.create("br", null, dom.byId("loginSelect"));
+        var lastName = new ValidationTextBox({
+            "id": "lastName",
+            "class": "login",
+            // "placeHolder": ,
+            "regExp": "\\S*",
+            "required": true
+            // "invalidMessage":
+        });
+        domConstruct.place(lastName.domNode, dom.byId("loginSelect"));
+        domConstruct.create("br", null, dom.byId("loginSelect"));
+
+        domConstruct.create("label", {
+            "for": "loginEmail",
+            "innerHTML": this.nls.login.email
+        }, dom.byId("loginSelect"));
+        domConstruct.create("br", null, dom.byId("loginSelect"));
+
+        var loginEmail = new ValidationTextBox({
+            "id": "loginEmail",
+            "class": "login",
+            // "placeHolder": ,
+            "regExp": "[A-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?",
+            "required": true
+            // "invalidMessage":
+        });
+        domConstruct.place(loginEmail.domNode, dom.byId("loginSelect"));
+        domConstruct.create("br", null, dom.byId("loginSelect"));
+        domConstruct.create("br", null, dom.byId("loginSelect"));
+
+        var loginOK = domConstruct.create("div", {
+          "class": "jimu-btn login loginButtons",
+          "innerHTML": this.nls.ok
+        }, dom.byId("loginSelect"));
+
+        var ook = on(loginOK, "click", lang.hitch(this, function() {
+          if (this.formIsValid()) {
+            this.submitLoginForm();
+            ook.remove();
+          }
+        }));
+
+      },
+
+      formIsValid: function() {
+
+        if (registry.byId("firstName").isValid() && registry.byId("lastName").isValid() && registry.byId("loginEmail").isValid()) {
+          return true;
+        } else {
+          return false;
+        }
+
+      },
+
+      submitLoginForm: function() {
+
+        var fn = registry.byId("firstName").value;
+        var ln = registry.byId("lastName").value;
+        var em = registry.byId("loginEmail").value;
+
+        var url = "/NewAccount?firstname=" + fn + "&lastname=" + ln + "&email=" + em;
+
+        var loginRequest = esriRequest({
+          url: this.config.feedbackUrl + url,
+          handleAs: "json"
+        });
+
+        loginRequest.then(lang.hitch(this, function(response) {
+            console.log(response);
+        }));
 
       }
 

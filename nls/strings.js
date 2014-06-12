@@ -15,9 +15,11 @@ define({
     feedbackAddComment: "Comment",
     feedbackAttachment: "Attachments",
     reassignButton: "Reassign",
+    ok: "OK",
     commentOK: "Submit",
     commentCancel: "Cancel",
     submitComment: "Submit",
+    noComment: "Please enter a comment before submitting.",
   	FeedbackStates: {
         "2" : "New Observation",
         "1" : "Pending Fix",
@@ -50,6 +52,18 @@ define({
       "status": "Status:",
       "obs_type": "Observation Type:",
       "description": "Description:"
+    },
+    login: {
+      "intro": "Welcome to the GeoFoundation Exchange Feedback Widget.",
+      "select": "Do you have a pre-existing ArcGIS Online account?",
+      "create": "Do you need to create an ArcGIS Online account?",
+      "click": "Click Here",
+      "form": "Please complete this form to create a New ArcGIS Online account:",
+      "firstName": "First Name:",
+      "lastName": "Last Name:",
+      "email": "Email Address:",
+      "thank": "Thank you for completing the form.  You should receive an email instructing you how to finalize your ArcGIS Online account. Once your account is created, please click OK."
+
     }
   },
   "zh-cn": true

@@ -1,4 +1,13 @@
 <div>
+  <!-- <div class="overlay" data-dojo-attach-point="overlayNode" data-dojo-attach-event="click:_onOverlayClick"></div>
+  <div class="content jimu-main-bgcolor-2" data-dojo-attach-point="contentNode">
+    <div class="divTitle">
+      <a target="_blank"></a>
+    </div>
+    <div class="line"></div>
+    <div class="jimu-btn" data-dojo-attach-point="okNode" data-dojo-attach-event="click:_onOkClick">${nls.ok}</div>
+  </div> -->
+  <!-- <div class="overlay" data-dojo-attach-point="overlay"></div> -->
   <div id="logoPanel" style="text-align: center">
     <img data-dojo-attach-point="logoNode"><br />
   </div>
@@ -19,16 +28,18 @@
   <div class="widgetTitle">${nls.selectCommunity}</div>
   <br />
   <div id="communitySelectorDiv" class="widgetContent"></div>
-  <hr class="greyHR narrowHR spacedHR">
-  <div id="provideFeedbackDiv">
-    <div class="widgetTitle">${nls.provideFeedback}</div>
+  <div class="signedIn">
+    <hr class="greyHR narrowHR spacedHR">
+    <div id="provideFeedbackDiv">
+      <div class="widgetTitle">${nls.provideFeedback}</div>
+      <br />
+      <div id="editorContainer"></div>
+      <br />
+    </div>
+    <div id="viewAllFeedback" style="display: none" data-dojo-attach-point="agreeChkNode" data-dojo-type="jimu/dijit/CheckBox" data-dojo-attach-event="click:toggleAllFeedback">&nbsp;&nbsp;${nls.toggleAllFeedback}</div>
     <br />
-    <div id="editorContainer"></div>
-    <br />
+    <div id="toggleAttribute" style="display: none" data-dojo-attach-point="ChkNode1" data-dojo-type="jimu/dijit/CheckBox" data-dojo-attach-event="click:toggleAttribute">&nbsp;&nbsp;${nls.toggleAttribute}</div>
+    <hr class="greyHR narrowHR spacedHR">
+    <div id="legendContainer"></div>
   </div>
-  <div id="viewAllFeedback" style="display: none" data-dojo-attach-point="agreeChkNode" data-dojo-type="jimu/dijit/CheckBox" data-dojo-attach-event="click:toggleAllFeedback">&nbsp;&nbsp;${nls.toggleAllFeedback}</div>
-  <br />
-  <div id="toggleAttribute" style="display: none" data-dojo-attach-point="ChkNode1" data-dojo-type="jimu/dijit/CheckBox" data-dojo-attach-event="click:toggleAttribute">&nbsp;&nbsp;${nls.toggleAttribute}</div>
-  <hr class="greyHR narrowHR spacedHR">
-  <div id="legendContainer"></div>
 </div>
