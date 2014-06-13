@@ -1243,16 +1243,14 @@ define(
 
               html.place(widget.domNode, jimuConfig.mainPageId);
               widget.startup();
-              // widget.on("close", lang.hitch(this, this.attributeTableClosed));
-              // widget.on("hide", lang.hitch(this, this.attributeTableClosed));
-              // widget.on("minimize", lang.hitch(this, this.attributeTableClosed));
 
               // Handle checkbox node
               var nodes = $(".dijitInline.dijitButtonNode", ($(".dijitToolbar")[0]));
               var closeNode = nodes[nodes.length - 1];
 
-              on(closeNode, "click", lang.hitch(this, function() {
+              var oc = on(closeNode, "click", lang.hitch(this, function() {
                 if (this.ChkNode1.checked) {
+                  oc.remove();
                   this.ChkNode1.checked = false;
                   domClass.remove(this.ChkNode1.checkNode, "checked");
                   this.widgetManager.closeWidget(this.attributeTable);
@@ -1881,7 +1879,7 @@ define(
 
           var loginSelect = domConstruct.create("div", {
             "class": "jimu-btn login",
-            "innerHTML": this.nls.login.select
+            "innerHTML": this.nls.login.signIn
           }, buttons);
 
 
