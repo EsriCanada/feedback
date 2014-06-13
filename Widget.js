@@ -920,11 +920,16 @@ define(
 
         params.template = template;
 
+        var community = $("input", $(".atiAttributes")[0])[0].value;
+        var desc = $("textarea", $(".atiAttributes")[0])[0].value;
+
         params.extraParameters = {
           observation: objectid, //fill In - objectid of feature,
           obsScale: Math.round(this.map.getScale()), //fill In (e.g. 10000),
           featuretype: featureType, //fill In - (either "point", "polyline" or "polygon"),
-          testMode: 0,
+          testMode: 1,
+          community: community,
+          description: desc,
           email: this.agolUser.email
         };
         console.log(printTask);
