@@ -1248,9 +1248,8 @@ define(
               var nodes = $(".dijitInline.dijitButtonNode", ($(".dijitToolbar")[0]));
               var closeNode = nodes[nodes.length - 1];
 
-              var oc = on(closeNode, "click", lang.hitch(this, function() {
+              on(closeNode, "click", lang.hitch(this, function() {
                 if (this.ChkNode1.checked) {
-                  oc.remove();
                   this.ChkNode1.checked = false;
                   domClass.remove(this.ChkNode1.checkNode, "checked");
                   this.widgetManager.closeWidget(this.attributeTable);
