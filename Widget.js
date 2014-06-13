@@ -21,6 +21,7 @@ define(
     "dojo/dom-style",
     "dojo/query",
     "dojo/dom-construct",
+    "dojo/dom-class",
     "dijit/registry",
     "dijit/_WidgetsInTemplateMixin",
     "esri/request",
@@ -75,6 +76,7 @@ define(
     domStyle,
     $,
     domConstruct,
+    domClass,
     registry,
     _WidgetsInTemplateMixin,
     esriRequest,
@@ -552,11 +554,11 @@ define(
           this.toggleFeedbackLayersVisibility(true);
         }
 
-        if (this.attributeTable  && dom.byId("toggleAttribute").checked) {
-          this.widgetManager.openWidget(this.attributeTable);
-        }
         if (this.imagery) {
           this.map.addLayer(this.imagery);
+        }
+        if (this.attributeTable  && dom.byId("toggleAttribute").checked) {
+          this.widgetManager.openWidget(this.attributeTable);
         }
 
       },
@@ -565,9 +567,9 @@ define(
 
         console.log('onClose');
         // this.toggleFeedbackLayersVisibility(false);
-        if (this.attributeTable) {
-          this.widgetManager.closeWidget(this.attributeTable);
-        }
+        // if (this.attributeTable) {
+        //   this.widgetManager.closeWidget(this.attributeTable);
+        // }
         // if (!this.map.getLayer("defaultBasemap") && this.basemap) {
         //   this.map.addLayer(this.basemap, 0);
         // }
@@ -1219,6 +1221,7 @@ define(
             this.widgetManager.loadWidget(widgetConfig).then(lang.hitch(this, function(widget) {
               this.attributeTable = widget;
 
+
               var layers = [{
                 "name": this.agolUser.layerInfos[0].featureLayer.name,
                 "layer": {
@@ -1240,9 +1243,18 @@ define(
 
               html.place(widget.domNode, jimuConfig.mainPageId);
               widget.startup();
-              widget.on("close", lang.hitch(this, this.attributeTableClosed));
-              widget.on("hide", lang.hitch(this, this.attributeTableClosed));
-              widget.on("minimize", lang.hitch(this, this.attributeTableClosed));
+
+              // Handle checkbox node
+              var nodes = $(".dijitInline.dijitButtonNode", ($(".dijitToolbar")[0]));
+              var closeNode = nodes[nodes.length - 1];
+
+              on(closeNode, "click", lang.hitch(this, function() {
+                if (this.ChkNode1.checked) {
+                  this.ChkNode1.checked = false;
+                  domClass.remove(this.ChkNode1.checkNode, "checked");
+                  this.widgetManager.closeWidget(this.attributeTable);
+                }
+              }));
             }));
           }
         } else {
@@ -1866,7 +1878,7 @@ define(
 
           var loginSelect = domConstruct.create("div", {
             "class": "jimu-btn login",
-            "innerHTML": this.nls.login.select
+            "innerHTML": this.nls.login.signIn
           }, buttons);
 
 
