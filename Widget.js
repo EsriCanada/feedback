@@ -433,7 +433,6 @@ define(
           domStyle.set($('.atiAttributes').children().children().children()[1], "display", "none");
           domStyle.set($('.atiAttributes').children().children().children()[4], "display", "none");
           this.createEditorButtons();
-
           this.styleComboBoxes();
         }
 
@@ -463,19 +462,20 @@ define(
 
           var editOK = domConstruct.create("div", {
             "class": "jimu-btn commentButton editorButtons",
-            "innerHTML": this.nls.commentOK
+            "innerHTML": this.nls.commentSubmit
           }, dom.byId("editorButtons"));
 
-          var editCancel = domConstruct.create("div", {
-            "class": "jimu-btn commentButton editorButtons",
-            "innerHTML": this.nls.commentCancel
-          }, dom.byId("editorButtons"));
-          this.editorProp = false;
+          // var editCancel = domConstruct.create("div", {
+          //   "class": "jimu-btn commentButton editorButtons",
+          //   "innerHTML": this.nls.cancel
+          // }, dom.byId("editorButtons"));
+          // this.editorProp = false;
+
+          this.editorProp = true;
 
           var ook = on(editOK, "click", lang.hitch(this, function() {
-            this.editorProp = true;
             this.map.infoWindow.hide();
-            $(".editorButtons").forEach(domConstruct.destroy);
+            // $(".editorButtons").forEach(domConstruct.destroy);
             ook.remove();
           }));
 
@@ -484,11 +484,14 @@ define(
           //   ocan.remove();
           // }));
 
-          // aspect.before(this.map.infoWindow, "hide", lang.hitch(this, function() {
-          //   if (!this.editorProp) {
-          //     // event.stop(e);
-          //   }
-          // }));
+          aspect.after(this.map.infoWindow, "hide", lang.hitch(this, function() {
+            if (this.editorProp) {
+              $(".editorButtons").forEach(domConstruct.destroy);
+              this.editorProp = false;
+              ook.remove();
+              // event.stop(e);
+            }
+          }));
 
 
         }
@@ -537,7 +540,7 @@ define(
 
         if (tokenUtils.userHaveSignIn()) {
           console.log('yay');
-          //this.onSignIn(tokenUtils.getCredential());
+        //this.onSignIn(tokenUtils.getCredential());
         } else {
           //this.onSignOut();
           this.userLogin();
@@ -651,9 +654,9 @@ define(
       acceptInvitationSucceeded: function(response, io) {
 
         console.log(response);
-        // domStyle.set("logoPanel", "display", "none");
         domStyle.set(dom.byId("groupInvitePanel"), "display", "none");
-        this.engageEditing();
+        this.engageFeedback(this.credential);
+        // this.engageEditing();
 
       },
 
@@ -715,8 +718,6 @@ define(
 
       engageFeedbackHandleSucceeded: function(response, io) {
 
-        // this.agolUser is different the second time around - does not have the same amount of layer info
-        // This current method is problematic if switching users without refreshing the app
         console.log("response");
         console.log(response);
         this.agolUser = response;
@@ -727,31 +728,31 @@ define(
         // }
         // this.addCustomField(this.agolUser);
 
-        var layer = new FeatureLayer(this.agolUser.layerInfos[0].featureLayer.url, this.agolUser.layerInfos[0].featureLayer.options);
-
-        var linfo = [{
-          layer: layer,
-          title: "Feedback Status"
-        }];
-
-        if (!dom.byId("legendDiv")) {
-          domConstruct.create("div", {
-            id: "legendDiv"
-          }, dom.byId("legendContainer"));
-
-          var legendDijit = new Legend({
-            id: "feedbackLegend",
-            map: this.map,
-            layerInfos: linfo
-          }, "legendDiv");
-        }
-
-        legendDijit.startup();
 
         if (response.isAuthenticated === true && response.isMember) {
           if (response.isMember === true) {
             domStyle.set("groupInvitePanel", "display", "none");
             // domStyle.set("logoPanel", "display", "none");
+            var layer = new FeatureLayer(this.agolUser.layerInfos[0].featureLayer.url, this.agolUser.layerInfos[0].featureLayer.options);
+
+            var linfo = [{
+              layer: layer,
+              title: "Feedback Status"
+            }];
+
+            if (!dom.byId("legendDiv")) {
+              domConstruct.create("div", {
+                id: "legendDiv"
+              }, dom.byId("legendContainer"));
+
+              var legendDijit = new Legend({
+                id: "feedbackLegend",
+                map: this.map,
+                layerInfos: linfo
+              }, "legendDiv");
+            }
+            legendDijit.startup();
+
             //window.opener.OAuthHelper.checkOAuthResponse(window.location.href);
             //Add Editor widget
             // console.log(this.editor);
@@ -765,7 +766,7 @@ define(
           }
         } else if (response.isAuthenticated === true && response.userInvitation) {
 
-          domStyle.set("logoPanel", "display", "block");
+          // domStyle.set("logoPanel", "display", "block");
 
           this.inviteId = response.userInvitation.id;
 
@@ -1632,13 +1633,13 @@ define(
           var commentOK = domConstruct.create("div", {
             "class": "jimu-btn commentButton",
             "id": "commentOK",
-            "innerHTML": this.nls.commentOK
+            "innerHTML": this.nls.commentSubmit
           }, commentButtons);
 
           var commentCancel = domConstruct.create("div", {
             "class": "jimu-btn commentButton",
             "id": "commentCancel",
-            "innerHTML": this.nls.commentCancel
+            "innerHTML": this.nls.cancel
           }, commentButtons);
 
           registry.byId("fbComment").focus();
@@ -1710,7 +1711,7 @@ define(
       changeFeedback: function(status, comment) {
 
         var curFeature = this.editor.attributeInspector._currentFeature;
-        var changeURL = this.config.feedbackUrl + "/ChangeFeedback?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&status=" + status;
+        var changeURL = this.config.feedbackUrl + "/ChangeFeedback?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&status=" + status + "&observer=" + curFeature.attributes.Creator + "&comment=" + comment + "&community=" + curFeature.attributes.community;
         var changeRequest = esriRequest({
           url: changeURL,
           handleAs: "json"
@@ -1747,7 +1748,7 @@ define(
       changeCommunity: function(community, comment) {
 
         var curFeature = this.editor.attributeInspector._currentFeature;
-        var changeURL = this.config.feedbackUrl + "/ChangeCommunity?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&community=" + community;
+        var changeURL = this.config.feedbackUrl + "/ChangeCommunity?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&newCommunity=" + community;
         var changeRequest = esriRequest({
           url: changeURL,
           handleAs: "json"
@@ -1781,8 +1782,6 @@ define(
         console.log(response);
 
       },
-
-
 
       createInfoTemplate: function(f) {
 
@@ -1828,7 +1827,7 @@ define(
         domConstruct.create("div", {
           "id": name + "OK",
           "class": "jimu-btn",
-          "innerHTML": this.nls.commentOK
+          "innerHTML": this.nls.commentSubmit
         });
 
         registry.byId(name + "Buttons").addChild(dom.byId(name + "OK"));
@@ -1846,25 +1845,37 @@ define(
 
         if (!dom.byId("loginSelect")) {
 
-          var content = this.nls.login.intro + "<br /><br />" + this.nls.login.select + "<br /><br />" + this.nls.login.create + "<br /><br />",
-
-          loginPane = domConstruct.create("div", {
+          var loginPane = domConstruct.create("div", {
             "id": "loginSelect",
-            "class": "login loginPane",
-            "innerHTML": content
-          }, dom.byId("jimu-layout-manager")),
+            "class": "login loginPane"
+          }, dom.byId("jimu-layout-manager"));
 
-          loginSelect = domConstruct.create("div", {
-            "class": "jimu-btn login loginButtons",
-            "innerHTML": this.nls.login.click
-          }, loginPane),
+          domConstruct.create("img", {
+            "class": "login center logo",
+            "src": this.folderUrl + 'images/CommunityMapsLogo.png'
+          }, loginPane);
 
-          loginCreate = domConstruct.create("div", {
-            "class": "jimu-btn login loginButtons",
-            "innerHTML": this.nls.login.click
-          }, loginPane),
+          domConstruct.create("div", {
+            "class": "login center divTitle",
+            "innerHTML": this.nls.login.intro
+          }, loginPane);
 
-          box = html.getMarginBox(jimuConfig.layoutId),
+          var buttons = domConstruct.create("div", {
+            "class": "login center loginButtons"
+          }, loginPane);
+
+          var loginSelect = domConstruct.create("div", {
+            "class": "jimu-btn login",
+            "innerHTML": this.nls.login.select
+          }, buttons);
+
+
+          var loginCreate = domConstruct.create("div", {
+            "class": "jimu-btn login",
+            "innerHTML": this.nls.login.create
+          }, buttons);
+
+          var box = html.getMarginBox(jimuConfig.layoutId),
           contentBox = html.getMarginBox(dom.byId("loginSelect")),
           position = {};
 
@@ -1885,7 +1896,7 @@ define(
           }));
 
           var oc = on(loginCreate, "click", lang.hitch(this, function() {
-            $(".loginButtons").forEach(domConstruct.destroy);
+            $(".login", loginPane).forEach(domConstruct.destroy);
             loginPane.innerHTML = "";
             oc.remove();
             this.createNewAccount();
@@ -1896,67 +1907,104 @@ define(
 
       createNewAccount: function() {
 
+        domConstruct.create("div", {
+          "class": "login center divTitle",
+          "innerHTML": this.nls.login.form
+        }, dom.byId("loginSelect"));
+
+        var newAcc = domConstruct.create("div", {
+          "class": "login center"
+        },dom.byId("loginSelect"));
+
         domConstruct.create("label", {
             "for": "firstName",
+            "class": "login",
             "innerHTML": this.nls.login.firstName
-        }, dom.byId("loginSelect"));
-        domConstruct.create("br", null, dom.byId("loginSelect"));
+        }, newAcc);
+        domConstruct.create("br", null, newAcc);
         var firstName = new ValidationTextBox({
             "id": "firstName",
             "class": "login",
-            // "placeHolder": ,
-            "regExp": "\\S*",
+            "placeHolder": this.nls.login.firstNamePlace,
+            "regExp": "[a-zA-Z]{1,20}",
             "required": true
             // "invalidMessage":
         });
-        domConstruct.place(firstName.domNode, dom.byId("loginSelect"));
-        domConstruct.create("br", null, dom.byId("loginSelect"));
+        domConstruct.place(firstName.domNode, newAcc);
+        domConstruct.create("br", null, newAcc);
 
         domConstruct.create("label", {
             "for": "lastName",
+            "class": "login",
             "innerHTML": this.nls.login.lastName
-        }, dom.byId("loginSelect"));
-        domConstruct.create("br", null, dom.byId("loginSelect"));
+        }, newAcc);
+        domConstruct.create("br", null, newAcc);
         var lastName = new ValidationTextBox({
             "id": "lastName",
             "class": "login",
-            // "placeHolder": ,
-            "regExp": "\\S*",
+            "placeHolder": this.nls.login.lastNamePlace,
+            "regExp": "[a-zA-Z]{1,20}",
             "required": true
             // "invalidMessage":
         });
-        domConstruct.place(lastName.domNode, dom.byId("loginSelect"));
-        domConstruct.create("br", null, dom.byId("loginSelect"));
+        domConstruct.place(lastName.domNode, newAcc);
+        domConstruct.create("br", null, newAcc);
 
         domConstruct.create("label", {
             "for": "loginEmail",
+            "class": "login",
             "innerHTML": this.nls.login.email
-        }, dom.byId("loginSelect"));
-        domConstruct.create("br", null, dom.byId("loginSelect"));
+        }, newAcc);
+        domConstruct.create("br", null, newAcc);
 
         var loginEmail = new ValidationTextBox({
             "id": "loginEmail",
             "class": "login",
-            // "placeHolder": ,
+            "placeHolder": this.nls.login.emailPlace,
             "regExp": "[A-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?",
             "required": true
             // "invalidMessage":
         });
-        domConstruct.place(loginEmail.domNode, dom.byId("loginSelect"));
-        domConstruct.create("br", null, dom.byId("loginSelect"));
-        domConstruct.create("br", null, dom.byId("loginSelect"));
+        domConstruct.place(loginEmail.domNode, newAcc);
+        domConstruct.create("br", null, newAcc);
+        domConstruct.create("br", null, newAcc);
+
+        var buttons = domConstruct.create("div", {
+          "class": "login center loginButtons"
+        }, newAcc);
 
         var loginOK = domConstruct.create("div", {
-          "class": "jimu-btn login loginButtons",
+          "class": "jimu-btn login",
           "innerHTML": this.nls.ok
-        }, dom.byId("loginSelect"));
+        }, buttons);
+
+        var loginCancel = domConstruct.create("div", {
+          "class": "jimu-btn login",
+          "innerHTML": this.nls.cancel
+        }, buttons);
 
         var ook = on(loginOK, "click", lang.hitch(this, function() {
           if (this.formIsValid()) {
-            this.submitLoginForm();
+            this.submitLoginForm(firstName, lastName, loginEmail);
             ook.remove();
+          } else {
+            alert(this.nls.login.invalidForm);
           }
         }));
+
+        var ocan = on(loginCancel, "click", lang.hitch(this, function() {
+          $(".login").forEach(domConstruct.destroy);
+          firstName.destroyRecursive();
+          lastName.destroyRecursive();
+          loginEmail.destroyRecursive();
+          ocan.remove();
+          this.userLogin();
+        }));
+
+      },
+
+      formIsValid: function() {
+
         if (registry.byId("firstName").isValid() && registry.byId("lastName").isValid() && registry.byId("loginEmail").isValid()) {
           return true;
         } else {
@@ -1965,13 +2013,9 @@ define(
 
       },
 
-      submitLoginForm: function() {
+      submitLoginForm: function(fn, ln, em) {
 
-        var fn = registry.byId("firstName").value;
-        var ln = registry.byId("lastName").value;
-        var em = registry.byId("loginEmail").value;
-
-        var url = "/NewAccount?firstname=" + fn + "&lastname=" + ln + "&email=" + em;
+        var url = "/NewAccount?firstname=" + fn.value + "&lastname=" + ln.value + "&email=" + em.value;
 
         var loginRequest = esriRequest({
           url: this.config.feedbackUrl + url,
@@ -1980,6 +2024,38 @@ define(
 
         loginRequest.then(lang.hitch(this, function(response) {
             console.log(response);
+            if (response) {
+              $(".loginButtons").forEach(domConstruct.destroy);
+              fn.destroyRecursive();
+              ln.destroyRecursive();
+              em.destroyRecursive();
+              dom.byId("loginSelect").innerHTML = "";
+              this.loginSubmitted();
+            }
+        }));
+
+      },
+
+      loginSubmitted: function() {
+
+        domConstruct.create("div", {
+          "class": "login center divTitle",
+          "innerHTML": this.nls.login.thank
+        }, dom.byId("loginSelect"));
+
+         var buttons = domConstruct.create("div", {
+          "class": "login center loginButtons"
+        }, dom.byId("loginSelect"));
+
+        var loginOK = domConstruct.create("div", {
+          "class": "jimu-btn login loginButtons",
+          "innerHTML": this.nls.ok
+        }, buttons);
+
+        var ook = on(loginOK, "click", lang.hitch(this, function() {
+          $(".login").forEach(domConstruct.destroy);
+          ook.remove();
+          tokenUtils.signIn(this.appConfig.portalUrl, this.appConfig.appId);
         }));
 
       }

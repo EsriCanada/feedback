@@ -16,9 +16,8 @@ define({
     feedbackAttachment: "Attachments",
     reassignButton: "Reassign",
     ok: "OK",
-    commentOK: "Submit",
-    commentCancel: "Cancel",
-    submitComment: "Submit",
+    commentSubmit: "Submit",
+    cancel: "Cancel",
     noComment: "Please enter a comment before submitting.",
   	FeedbackStates: {
         "2" : "New Observation",
@@ -54,16 +53,18 @@ define({
       "description": "Description:"
     },
     login: {
-      "intro": "Welcome to the GeoFoundation Exchange Feedback Widget.",
-      "select": "Do you have a pre-existing ArcGIS Online account?",
-      "create": "Do you need to create an ArcGIS Online account?",
-      "click": "Click Here",
-      "form": "Please complete this form to create a New ArcGIS Online account:",
+      "intro": "Welcome to the GeoFoundation Exchange Feedback Widget.<br /><br />If you wish to submit feedback, you will need to <b>register</b> or <b>sign in</b> to an ArcGIS Online account.<br /><br />",
+      "select": "Sign in",
+      "create": "Register",
+      "form": "Please enter the following information to register a new ArcGIS Online account:<br /><br />",
       "firstName": "First Name:",
+      "firstNamePlace": "First Name",
       "lastName": "Last Name:",
+      "lastNamePlace": "Last Name",
       "email": "Email Address:",
-      "thank": "Thank you for completing the form.  You should receive an email instructing you how to finalize your ArcGIS Online account. Once your account is created, please click OK."
-
+      "emailPlace": "Email Address",
+      "invalidForm": "Please correctly enter all the required information.",
+      "thank": "Thank you for registering with the GeoFoundation Exchange Feedback Widget.  You will receive an email instructing you how to finalize your ArcGIS Online account.<br /><br />Once your account has been created, click <b>OK</b> to <b>sign in</b>.<br /><br />"
     }
   },
   "zh-cn": true
