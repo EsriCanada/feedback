@@ -1,17 +1,8 @@
 <div>
-  <!-- <div class="overlay" data-dojo-attach-point="overlayNode" data-dojo-attach-event="click:_onOverlayClick"></div>
-  <div class="content jimu-main-bgcolor-2" data-dojo-attach-point="contentNode">
-    <div class="divTitle">
-      <a target="_blank"></a>
-    </div>
-    <div class="line"></div>
-    <div class="jimu-btn" data-dojo-attach-point="okNode" data-dojo-attach-event="click:_onOkClick">${nls.ok}</div>
-  </div> -->
-  <!-- <div class="overlay" data-dojo-attach-point="overlay"></div> -->
-  <div id="logoPanel" style="text-align: center">
+  <div id="logoPanel" class="center">
     <img data-dojo-attach-point="logoNode"><br />
   </div>
-  <div id="groupInvitePanel" style="display: none; padding: 5px; text-align: center;">
+  <div id="groupInvitePanel" class="invitePanel">
     <p><span id="userId"></span><span id="userMessage">${nls.gfxGroupInvite}</span></p>
     <input id="acceptInvite" type="button" value="Accept" data-dojo-attach-event="click:acceptInvite" />
     <input id="declineInvite" type="button" value="Decline" data-dojo-attach-event="click:declineInvite" />
