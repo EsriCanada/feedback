@@ -1723,7 +1723,7 @@ define(
       changeFeedback: function(status, comment) {
 
         var curFeature = this.editor.attributeInspector._currentFeature;
-        var changeURL = this.config.feedbackUrl + "/ChangeFeedback?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&status=" + status + "&observer=" + curFeature.attributes.Creator + "&comment=" + comment + "&community=" + curFeature.attributes.community;
+        var changeURL = this.config.feedbackUrl + "/ChangeFeedback?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&status=" + status + "&observer=" + curFeature.attributes.Creator + "&comment=" + comment + "&community=" + curFeature.attributes.mgmt_data_source;
         var changeRequest = esriRequest({
           url: changeURL,
           handleAs: "json"
