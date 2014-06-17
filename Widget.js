@@ -887,7 +887,7 @@ define(
         if (result.adds.length > 0) {
           console.log("OID: " + result.adds[0].objectId);
           console.log("Scale: " + this.map.getScale());
-          this.createAndAttachReport(result.adds[0].objectId, "point");
+          this.createAndAttachReport(result.adds[0].objectId, result.target.name);
 
         }
 
