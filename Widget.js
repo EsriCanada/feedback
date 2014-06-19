@@ -887,7 +887,7 @@ define(
         if (result.adds.length > 0) {
           console.log("OID: " + result.adds[0].objectId);
           console.log("Scale: " + this.map.getScale());
-          this.createAndAttachReport(result.adds[0].objectId, "point");
+          this.createAndAttachReport(result.adds[0].objectId, result.target.name);
 
         }
 
@@ -1728,7 +1728,7 @@ define(
       changeFeedback: function(status, comment) {
 
         var curFeature = this.editor.attributeInspector._currentFeature;
-        var changeURL = this.config.feedbackUrl + "/ChangeFeedback?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&status=" + status + "&observer=" + curFeature.attributes.Creator + "&comment=" + comment + "&community=" + curFeature.attributes.community;
+        var changeURL = this.config.feedbackUrl + "/ChangeFeedback?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&status=" + status + "&observer=" + curFeature.attributes.Creator + "&comment=" + comment + "&community=" + curFeature.attributes.mgmt_data_source;
         var changeRequest = esriRequest({
           url: changeURL,
           handleAs: "json"
@@ -2008,6 +2008,7 @@ define(
             alert(this.nls.login.invalidForm);
           }
         }));
+
 
         var ocan = on(loginCancel, "click", lang.hitch(this, function() {
           $(".login").forEach(domConstruct.destroy);
