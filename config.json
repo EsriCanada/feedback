@@ -4,7 +4,7 @@
     "width": 275,
     "height": 600
   },
-  "feedbackUrl": "http://localhost:24900/FeedbackService.svc",
+  "feedbackUrl": "http://74.216.225.66/MyApplication/FeedbackService.svc",
   "editor": {
     "createOptions": {
       "polylineDrawTools": [

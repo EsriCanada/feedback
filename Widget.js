@@ -199,35 +199,35 @@ define(
         // var _this = this;
 
         queryTask.execute(query, lang.hitch(this, function(featureSet) {
-          if (featureSet.features.length > 1) {
-            for (var community in featureSet.features) {
-              if (featureSet.features[community].attributes["gfx_management.sde.DataSource.name_official"] !== graphic.attributes.mgmt_data_source) {
-                assignmentCommunities.push({
-                  "name": featureSet.features[community].attributes["gfx_management.sde.DataSource.name_official"]
-                });
+            if (featureSet.features.length > 1) {
+              for (var community in featureSet.features) {
+                if (featureSet.features[community].attributes["gfx_management.sde.DataSource.name_official"] !== graphic.attributes.mgmt_data_source) {
+                  assignmentCommunities.push({
+                    "name": featureSet.features[community].attributes["gfx_management.sde.DataSource.name_official"]
+                  });
+                }
               }
+
+              // var onChange = function(data) {
+              //   //console.log(data);
+              // };
+
+              var placeholder = this.nls.newCommunityPlaceholder;
+              if (assignmentCommunities.length === 0) {
+                placeholder = "No intersecting communities";
+              }
+              this.createSelectBox(false, "intersectingCommunity", assignmentCommunities, placeholder, this.communityChosen);
+            } else {
+
+              dom.byId("reassignFeedback").value = "No intersecting communitites";
+              dom.byId("intersectingCommunity").value = "No communities";
+
             }
-
-            // var onChange = function(data) {
-            //   //console.log(data);
-            // };
-
-            var placeholder = this.nls.newCommunityPlaceholder;
-            if (assignmentCommunities.length === 0) {
-              placeholder = "No intersecting communities";
-            }
-            this.createSelectBox(false, "intersectingCommunity", assignmentCommunities, placeholder, this.communityChosen);
-          } else {
-
-          dom.byId("reassignFeedback").value = "No intersecting communitites";
-          dom.byId("intersectingCommunity").value = "No communities";
-
-        }
-        //loadingIndicator.stop();
-      }),
-      function(data) {
-        console.log(data);
-      });
+            //loadingIndicator.stop();
+          }),
+          function(data) {
+            console.log(data);
+          });
 
       },
 
@@ -313,7 +313,7 @@ define(
         var sortAttributes = [{
           attribute: "name",
           ascending: true
-        }];
+                }];
         store.fetch({
           onComplete: lang.hitch(this, completed),
           onError: lang.hitch(this, error),
@@ -434,6 +434,9 @@ define(
         } else {
           domStyle.set($('.atiAttributes').children().children().children()[1], "display", "none");
           domStyle.set($('.atiAttributes').children().children().children()[4], "display", "none");
+          var attachmentEditorChildren = $(".atiAttachmentEditor")[0].children;
+          array.forEach(attachmentEditorChildren, this._showElements, this);
+          array.forEach(attachmentEditorChildren[1].children, this._showElements, this);
           this.createEditorButtons();
           this.styleComboBoxes();
         }
@@ -449,6 +452,12 @@ define(
           console.log('queryConversation');
           this.queryConversation(commentDiv); //this.editor.attributeInspector._currentFeature);
         }
+
+      },
+
+      _showElements: function(e) {
+
+        domStyle.set(e, "display", "block");
 
       },
 
@@ -542,7 +551,7 @@ define(
 
         if (tokenUtils.userHaveSignIn()) {
           console.log('yay');
-        //this.onSignIn(tokenUtils.getCredential());
+          //this.onSignIn(tokenUtils.getCredential());
         } else {
           //this.onSignOut();
           this.userLogin();
@@ -557,7 +566,7 @@ define(
         if (this.imagery) {
           this.map.addLayer(this.imagery);
         }
-        if (this.attributeTable  && dom.byId("toggleAttribute").checked) {
+        if (this.attributeTable && dom.byId("toggleAttribute").checked) {
           this.widgetManager.openWidget(this.attributeTable);
         }
 
@@ -740,7 +749,7 @@ define(
             var linfo = [{
               layer: layer,
               title: "Feedback Status"
-            }];
+                        }];
 
             if (!dom.byId("legendDiv")) {
               domConstruct.create("div", {
@@ -883,11 +892,11 @@ define(
       editsCompleteHandler: function(result) {
 
         // console.log(result);
-
         if (result.adds.length > 0) {
           console.log("OID: " + result.adds[0].objectId);
           console.log("Scale: " + this.map.getScale());
-          this.createAndAttachReport(result.adds[0].objectId, "point");
+          this.createAndAttachReport(result.adds[0].objectId, result.target.name);
+          this.addOtherAttachments(result.adds[0].objectId, result.target.name);
 
         }
 
@@ -920,11 +929,16 @@ define(
 
         params.template = template;
 
+        var community = $("input", $(".atiAttributes")[0])[0].value;
+        var desc = $("textarea", $(".atiAttributes")[0])[0].value;
+
         params.extraParameters = {
           observation: objectid, //fill In - objectid of feature,
           obsScale: Math.round(this.map.getScale()), //fill In (e.g. 10000),
           featuretype: featureType, //fill In - (either "point", "polyline" or "polygon"),
-          testMode: 0,
+          testMode: 1,
+          community: community,
+          description: desc,
           email: this.agolUser.email
         };
         console.log(printTask);
@@ -937,6 +951,24 @@ define(
       printSuccessful: function(response) {
 
         console.log(response);
+
+      },
+
+      addOtherAttachments: function(objectid, featureType) {
+
+        var attachment = $(".attachmentEditor")[0].children[1].children[7].children[0];
+        if (!attachment.value) {
+          return;
+        }
+        var layer;
+        array.forEach(this.agolUser.layerInfos, function(li) {
+          if (featureType === li.featureLayer.name) {
+            layer = this.getLayerFromMap(li.featureLayer.url);
+          }
+        }, this);
+        layer.addAttachment(objectid, attachment.parentNode, function() {
+          console.log("attached");
+        });
 
       },
 
@@ -1059,12 +1091,12 @@ define(
           returnGeometry: false,
           where: "1=1",
           outFields: ["x_min",
-            "y_min",
-            "x_max",
-            "y_max",
-            "name_common",
-            "name_official"
-          ]
+                        "y_min",
+                        "x_max",
+                        "y_max",
+                        "name_common",
+                        "name_official"
+                    ]
         });
 
         functional.forIn(this.config.contributorDataFields, function(f) {
@@ -1227,17 +1259,17 @@ define(
                 "layer": {
                   "url": this.agolUser.layerInfos[0].featureLayer.url
                 }
-              }, {
+                            }, {
                 "name": this.agolUser.layerInfos[1].featureLayer.name,
                 "layer": {
                   "url": this.agolUser.layerInfos[1].featureLayer.url
                 }
-              }, {
+                            }, {
                 "name": this.agolUser.layerInfos[2].featureLayer.name,
                 "layer": {
                   "url": this.agolUser.layerInfos[2].featureLayer.url
                 }
-              }];
+                            }];
 
               widget.config.layers = layers;
 
@@ -1248,9 +1280,8 @@ define(
               var nodes = $(".dijitInline.dijitButtonNode", ($(".dijitToolbar")[0]));
               var closeNode = nodes[nodes.length - 1];
 
-              var oc = on(closeNode, "click", lang.hitch(this, function() {
+              on(closeNode, "click", lang.hitch(this, function() {
                 if (this.ChkNode1.checked) {
-                  oc.remove();
                   this.ChkNode1.checked = false;
                   domClass.remove(this.ChkNode1.checkNode, "checked");
                   this.widgetManager.closeWidget(this.attributeTable);
@@ -1583,7 +1614,7 @@ define(
 
       destroyButtons: function() {
 
-         $(".feedbackStatusButton", $(".buttonsDiv")[0]).forEach(domConstruct.destroy);
+        $(".feedbackStatusButton", $(".buttonsDiv")[0]).forEach(domConstruct.destroy);
         if (registry.byId('commentPane')) {
           registry.byId('commentPane').destroyRecursive();
         }
@@ -1686,7 +1717,7 @@ define(
           domStyle.set(buttonsDiv, 'display', 'none');
           domStyle.set($(".addCommentDiv")[0], 'display', 'block');
           if (status === -1) {
-             domStyle.set(dom.byId("reassignDiv"), 'display', 'block');
+            domStyle.set(dom.byId("reassignDiv"), 'display', 'block');
           }
           registry.byId("fbComment").reset();
           registry.byId("fbComment").focus();
@@ -1698,10 +1729,10 @@ define(
         // reassign
         if (status === -1) {
           this.changeCommunity(this.communityChange, comment);
-        // comment only
+          // comment only
         } else if (status === -2) {
           this.submitComment(comment, this.editor.attributeInspector._currentFeature);
-        // all other buttons
+          // all other buttons
         } else {
           this.changeFeedback(status, comment);
         }
@@ -1724,7 +1755,7 @@ define(
       changeFeedback: function(status, comment) {
 
         var curFeature = this.editor.attributeInspector._currentFeature;
-        var changeURL = this.config.feedbackUrl + "/ChangeFeedback?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&status=" + status + "&observer=" + curFeature.attributes.Creator + "&comment=" + comment + "&community=" + curFeature.attributes.community;
+        var changeURL = this.config.feedbackUrl + "/ChangeFeedback?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&status=" + status + "&observer=" + curFeature.attributes.Creator + "&comment=" + comment + "&community=" + curFeature.attributes.mgmt_data_source;
         var changeRequest = esriRequest({
           url: changeURL,
           handleAs: "json"
@@ -1889,13 +1920,13 @@ define(
           }, buttons);
 
           var box = html.getMarginBox(jimuConfig.layoutId),
-          contentBox = html.getMarginBox(dom.byId("loginSelect")),
-          position = {};
+            contentBox = html.getMarginBox(dom.byId("loginSelect")),
+            position = {};
 
           position.width = contentBox.w;
           position.height = contentBox.h;
-          position.left = (box.w - position.width)/2;
-          position.top = (box.h - position.height)/2;
+          position.left = (box.w - position.width) / 2;
+          position.top = (box.h - position.height) / 2;
 
           domStyle.set(dom.byId("loginSelect"), {
             left: position.left + 'px',
@@ -1927,56 +1958,56 @@ define(
 
         var newAcc = domConstruct.create("div", {
           "class": "login center"
-        },dom.byId("loginSelect"));
+        }, dom.byId("loginSelect"));
 
         domConstruct.create("label", {
-            "for": "firstName",
-            "class": "login",
-            "innerHTML": this.nls.login.firstName
+          "for": "firstName",
+          "class": "login",
+          "innerHTML": this.nls.login.firstName
         }, newAcc);
         domConstruct.create("br", null, newAcc);
         var firstName = new ValidationTextBox({
-            "id": "firstName",
-            "class": "login",
-            "placeHolder": this.nls.login.firstNamePlace,
-            "regExp": "[a-zA-Z]{1,20}",
-            "required": true
-            // "invalidMessage":
+          "id": "firstName",
+          "class": "login",
+          "placeHolder": this.nls.login.firstNamePlace,
+          "regExp": "[a-zA-Z]{1,20}",
+          "required": true
+          // "invalidMessage":
         });
         domConstruct.place(firstName.domNode, newAcc);
         domConstruct.create("br", null, newAcc);
 
         domConstruct.create("label", {
-            "for": "lastName",
-            "class": "login",
-            "innerHTML": this.nls.login.lastName
+          "for": "lastName",
+          "class": "login",
+          "innerHTML": this.nls.login.lastName
         }, newAcc);
         domConstruct.create("br", null, newAcc);
         var lastName = new ValidationTextBox({
-            "id": "lastName",
-            "class": "login",
-            "placeHolder": this.nls.login.lastNamePlace,
-            "regExp": "[a-zA-Z]{1,20}",
-            "required": true
-            // "invalidMessage":
+          "id": "lastName",
+          "class": "login",
+          "placeHolder": this.nls.login.lastNamePlace,
+          "regExp": "[a-zA-Z]{1,20}",
+          "required": true
+          // "invalidMessage":
         });
         domConstruct.place(lastName.domNode, newAcc);
         domConstruct.create("br", null, newAcc);
 
         domConstruct.create("label", {
-            "for": "loginEmail",
-            "class": "login",
-            "innerHTML": this.nls.login.email
+          "for": "loginEmail",
+          "class": "login",
+          "innerHTML": this.nls.login.email
         }, newAcc);
         domConstruct.create("br", null, newAcc);
 
         var loginEmail = new ValidationTextBox({
-            "id": "loginEmail",
-            "class": "login",
-            "placeHolder": this.nls.login.emailPlace,
-            "regExp": "[A-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?",
-            "required": true
-            // "invalidMessage":
+          "id": "loginEmail",
+          "class": "login",
+          "placeHolder": this.nls.login.emailPlace,
+          "regExp": "[A-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?",
+          "required": true
+          // "invalidMessage":
         });
         domConstruct.place(loginEmail.domNode, newAcc);
         domConstruct.create("br", null, newAcc);
@@ -2004,6 +2035,7 @@ define(
             alert(this.nls.login.invalidForm);
           }
         }));
+
 
         var ocan = on(loginCancel, "click", lang.hitch(this, function() {
           $(".login").forEach(domConstruct.destroy);
@@ -2036,15 +2068,15 @@ define(
         });
 
         loginRequest.then(lang.hitch(this, function(response) {
-            console.log(response);
-            if (response) {
-              $(".loginButtons").forEach(domConstruct.destroy);
-              fn.destroyRecursive();
-              ln.destroyRecursive();
-              em.destroyRecursive();
-              dom.byId("loginSelect").innerHTML = "";
-              this.loginSubmitted();
-            }
+          console.log(response);
+          if (response) {
+            $(".loginButtons").forEach(domConstruct.destroy);
+            fn.destroyRecursive();
+            ln.destroyRecursive();
+            em.destroyRecursive();
+            dom.byId("loginSelect").innerHTML = "";
+            this.loginSubmitted();
+          }
         }));
 
       },
@@ -2056,7 +2088,7 @@ define(
           "innerHTML": this.nls.login.thank
         }, dom.byId("loginSelect"));
 
-         var buttons = domConstruct.create("div", {
+        var buttons = domConstruct.create("div", {
           "class": "login center loginButtons"
         }, dom.byId("loginSelect"));
 
@@ -2074,5 +2106,4 @@ define(
       }
 
     });
-  }
-);
+  });

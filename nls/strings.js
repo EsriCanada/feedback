@@ -53,7 +53,7 @@ define({
       "description": "Description:"
     },
     login: {
-      "intro": "Welcome to the GeoFoundation Exchange Feedback Widget.<br /><br />If you wish to submit feedback, you will need to <b>register</b> or <b>sign in</b> to an ArcGIS Online account.<br /><br />",
+      "intro": "Welcome to the Community Map of Canada Feedback Widget.<br /><br />If you wish to submit feedback, you will need to <b>register</b> or <b>sign in</b> to an ArcGIS Online account.<br /><br />",
       "signIn": "Sign in",
       "create": "Register",
       "form": "Please enter the following information to register a new ArcGIS Online account:<br /><br />",
