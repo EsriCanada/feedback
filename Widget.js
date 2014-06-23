@@ -13,11 +13,14 @@ define(
     "dojo/_base/declare",
     "dojo/_base/event",
     "dojo/_base/lang",
+    "dojo/_base/unload",
     "dojo/aspect",
+    "dojo/cookie",
     "dojo/Deferred",
     "dojo/dom",
     "dojo/on",
     "dojo/keys",
+    "dojo/json",
     "dojo/dom-style",
     "dojo/query",
     "dojo/dom-construct",
@@ -68,11 +71,14 @@ define(
     declare,
     event,
     lang,
+    baseUnload,
     aspect,
+    cookie,
     Deferred,
     dom,
     on,
     keys,
+    JSON,
     domStyle,
     $,
     domConstruct,
@@ -199,35 +205,35 @@ define(
         // var _this = this;
 
         queryTask.execute(query, lang.hitch(this, function(featureSet) {
-          if (featureSet.features.length > 1) {
-            for (var community in featureSet.features) {
-              if (featureSet.features[community].attributes["gfx_management.sde.DataSource.name_official"] !== graphic.attributes.mgmt_data_source) {
-                assignmentCommunities.push({
-                  "name": featureSet.features[community].attributes["gfx_management.sde.DataSource.name_official"]
-                });
+            if (featureSet.features.length > 1) {
+              for (var community in featureSet.features) {
+                if (featureSet.features[community].attributes["gfx_management.sde.DataSource.name_official"] !== graphic.attributes.mgmt_data_source) {
+                  assignmentCommunities.push({
+                    "name": featureSet.features[community].attributes["gfx_management.sde.DataSource.name_official"]
+                  });
+                }
               }
+
+              // var onChange = function(data) {
+              //   //console.log(data);
+              // };
+
+              var placeholder = this.nls.newCommunityPlaceholder;
+              if (assignmentCommunities.length === 0) {
+                placeholder = "No intersecting communities";
+              }
+              this.createSelectBox(false, "intersectingCommunity", assignmentCommunities, placeholder, this.communityChosen);
+            } else {
+
+              dom.byId("reassignFeedback").value = "No intersecting communitites";
+              dom.byId("intersectingCommunity").value = "No communities";
+
             }
-
-            // var onChange = function(data) {
-            //   //console.log(data);
-            // };
-
-            var placeholder = this.nls.newCommunityPlaceholder;
-            if (assignmentCommunities.length === 0) {
-              placeholder = "No intersecting communities";
-            }
-            this.createSelectBox(false, "intersectingCommunity", assignmentCommunities, placeholder, this.communityChosen);
-          } else {
-
-          dom.byId("reassignFeedback").value = "No intersecting communitites";
-          dom.byId("intersectingCommunity").value = "No communities";
-
-        }
-        //loadingIndicator.stop();
-      }),
-      function(data) {
-        console.log(data);
-      });
+            //loadingIndicator.stop();
+          }),
+          function(data) {
+            console.log(data);
+          });
 
       },
 
@@ -313,7 +319,7 @@ define(
         var sortAttributes = [{
           attribute: "name",
           ascending: true
-        }];
+                }];
         store.fetch({
           onComplete: lang.hitch(this, completed),
           onError: lang.hitch(this, error),
@@ -434,6 +440,9 @@ define(
         } else {
           domStyle.set($('.atiAttributes').children().children().children()[1], "display", "none");
           domStyle.set($('.atiAttributes').children().children().children()[4], "display", "none");
+          var attachmentEditorChildren = $(".atiAttachmentEditor")[0].children;
+          array.forEach(attachmentEditorChildren, this._showElements, this);
+          array.forEach(attachmentEditorChildren[1].children, this._showElements, this);
           this.createEditorButtons();
           this.styleComboBoxes();
         }
@@ -449,6 +458,12 @@ define(
           console.log('queryConversation');
           this.queryConversation(commentDiv); //this.editor.attributeInspector._currentFeature);
         }
+
+      },
+
+      _showElements: function(e) {
+
+        domStyle.set(e, "display", "block");
 
       },
 
@@ -542,7 +557,7 @@ define(
 
         if (tokenUtils.userHaveSignIn()) {
           console.log('yay');
-        //this.onSignIn(tokenUtils.getCredential());
+          //this.onSignIn(tokenUtils.getCredential());
         } else {
           //this.onSignOut();
           this.userLogin();
@@ -557,7 +572,7 @@ define(
         if (this.imagery) {
           this.map.addLayer(this.imagery);
         }
-        if (this.attributeTable  && dom.byId("toggleAttribute").checked) {
+        if (this.attributeTable && dom.byId("toggleAttribute").checked) {
           this.widgetManager.openWidget(this.attributeTable);
         }
 
@@ -598,6 +613,9 @@ define(
         this.credential = credential;
         this.engageFeedback(credential);
         domStyle.set($(".signedIn")[0], "display", "block");
+        this.loadCredentials();
+        baseUnload.addOnUnload(lang.hitch(this, this.storeCredentials));
+
 
       },
 
@@ -631,6 +649,10 @@ define(
         if (this.layers.length > 0) {
           this.toggleFeedbackLayersVisibility(false);
         }
+
+        this.storeCredentials();
+        // Clear credentials that persist on logout
+        this.clearCredentials();
 
       },
 
@@ -740,7 +762,7 @@ define(
             var linfo = [{
               layer: layer,
               title: "Feedback Status"
-            }];
+                        }];
 
             if (!dom.byId("legendDiv")) {
               domConstruct.create("div", {
@@ -883,11 +905,11 @@ define(
       editsCompleteHandler: function(result) {
 
         // console.log(result);
-
         if (result.adds.length > 0) {
           console.log("OID: " + result.adds[0].objectId);
           console.log("Scale: " + this.map.getScale());
           this.createAndAttachReport(result.adds[0].objectId, result.target.name);
+          this.addOtherAttachments(result.adds[0].objectId, result.target.name);
 
         }
 
@@ -942,6 +964,24 @@ define(
       printSuccessful: function(response) {
 
         console.log(response);
+
+      },
+
+      addOtherAttachments: function(objectid, featureType) {
+
+        var attachment = $(".attachmentEditor")[0].children[1].children[7].children[0];
+        if (!attachment.value) {
+          return;
+        }
+        var layer;
+        array.forEach(this.agolUser.layerInfos, function(li) {
+          if (featureType === li.featureLayer.name) {
+            layer = this.getLayerFromMap(li.featureLayer.url);
+          }
+        }, this);
+        layer.addAttachment(objectid, attachment.parentNode, function() {
+          console.log("attached");
+        });
 
       },
 
@@ -1030,6 +1070,9 @@ define(
           domStyle.set(dom.byId("provideFeedbackDiv"), "display", "block");
         } else {
           domStyle.set(dom.byId("provideFeedbackDiv"), "display", "none");
+          this.agreeChkNode.checked = true;
+          domClass.add(this.agreeChkNode.checkNode, "checked");
+          this.toggleAllFeedback();
         }
 
       },
@@ -1064,12 +1107,12 @@ define(
           returnGeometry: false,
           where: "1=1",
           outFields: ["x_min",
-            "y_min",
-            "x_max",
-            "y_max",
-            "name_common",
-            "name_official"
-          ]
+                        "y_min",
+                        "x_max",
+                        "y_max",
+                        "name_common",
+                        "name_official"
+                    ]
         });
 
         functional.forIn(this.config.contributorDataFields, function(f) {
@@ -1232,17 +1275,17 @@ define(
                 "layer": {
                   "url": this.agolUser.layerInfos[0].featureLayer.url
                 }
-              }, {
+                            }, {
                 "name": this.agolUser.layerInfos[1].featureLayer.name,
                 "layer": {
                   "url": this.agolUser.layerInfos[1].featureLayer.url
                 }
-              }, {
+                            }, {
                 "name": this.agolUser.layerInfos[2].featureLayer.name,
                 "layer": {
                   "url": this.agolUser.layerInfos[2].featureLayer.url
                 }
-              }];
+                            }];
 
               widget.config.layers = layers;
 
@@ -1587,7 +1630,7 @@ define(
 
       destroyButtons: function() {
 
-         $(".feedbackStatusButton", $(".buttonsDiv")[0]).forEach(domConstruct.destroy);
+        $(".feedbackStatusButton", $(".buttonsDiv")[0]).forEach(domConstruct.destroy);
         if (registry.byId('commentPane')) {
           registry.byId('commentPane').destroyRecursive();
         }
@@ -1690,7 +1733,7 @@ define(
           domStyle.set(buttonsDiv, 'display', 'none');
           domStyle.set($(".addCommentDiv")[0], 'display', 'block');
           if (status === -1) {
-             domStyle.set(dom.byId("reassignDiv"), 'display', 'block');
+            domStyle.set(dom.byId("reassignDiv"), 'display', 'block');
           }
           registry.byId("fbComment").reset();
           registry.byId("fbComment").focus();
@@ -1702,10 +1745,10 @@ define(
         // reassign
         if (status === -1) {
           this.changeCommunity(this.communityChange, comment);
-        // comment only
+          // comment only
         } else if (status === -2) {
           this.submitComment(comment, this.editor.attributeInspector._currentFeature);
-        // all other buttons
+          // all other buttons
         } else {
           this.changeFeedback(status, comment);
         }
@@ -1893,13 +1936,13 @@ define(
           }, buttons);
 
           var box = html.getMarginBox(jimuConfig.layoutId),
-          contentBox = html.getMarginBox(dom.byId("loginSelect")),
-          position = {};
+            contentBox = html.getMarginBox(dom.byId("loginSelect")),
+            position = {};
 
           position.width = contentBox.w;
           position.height = contentBox.h;
-          position.left = (box.w - position.width)/2;
-          position.top = (box.h - position.height)/2;
+          position.left = (box.w - position.width) / 2;
+          position.top = (box.h - position.height) / 2;
 
           domStyle.set(dom.byId("loginSelect"), {
             left: position.left + 'px',
@@ -1931,56 +1974,56 @@ define(
 
         var newAcc = domConstruct.create("div", {
           "class": "login center"
-        },dom.byId("loginSelect"));
+        }, dom.byId("loginSelect"));
 
         domConstruct.create("label", {
-            "for": "firstName",
-            "class": "login",
-            "innerHTML": this.nls.login.firstName
+          "for": "firstName",
+          "class": "login",
+          "innerHTML": this.nls.login.firstName
         }, newAcc);
         domConstruct.create("br", null, newAcc);
         var firstName = new ValidationTextBox({
-            "id": "firstName",
-            "class": "login",
-            "placeHolder": this.nls.login.firstNamePlace,
-            "regExp": "[a-zA-Z]{1,20}",
-            "required": true
-            // "invalidMessage":
+          "id": "firstName",
+          "class": "login",
+          "placeHolder": this.nls.login.firstNamePlace,
+          "regExp": "[a-zA-Z]{1,20}",
+          "required": true
+          // "invalidMessage":
         });
         domConstruct.place(firstName.domNode, newAcc);
         domConstruct.create("br", null, newAcc);
 
         domConstruct.create("label", {
-            "for": "lastName",
-            "class": "login",
-            "innerHTML": this.nls.login.lastName
+          "for": "lastName",
+          "class": "login",
+          "innerHTML": this.nls.login.lastName
         }, newAcc);
         domConstruct.create("br", null, newAcc);
         var lastName = new ValidationTextBox({
-            "id": "lastName",
-            "class": "login",
-            "placeHolder": this.nls.login.lastNamePlace,
-            "regExp": "[a-zA-Z]{1,20}",
-            "required": true
-            // "invalidMessage":
+          "id": "lastName",
+          "class": "login",
+          "placeHolder": this.nls.login.lastNamePlace,
+          "regExp": "[a-zA-Z]{1,20}",
+          "required": true
+          // "invalidMessage":
         });
         domConstruct.place(lastName.domNode, newAcc);
         domConstruct.create("br", null, newAcc);
 
         domConstruct.create("label", {
-            "for": "loginEmail",
-            "class": "login",
-            "innerHTML": this.nls.login.email
+          "for": "loginEmail",
+          "class": "login",
+          "innerHTML": this.nls.login.email
         }, newAcc);
         domConstruct.create("br", null, newAcc);
 
         var loginEmail = new ValidationTextBox({
-            "id": "loginEmail",
-            "class": "login",
-            "placeHolder": this.nls.login.emailPlace,
-            "regExp": "[A-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?",
-            "required": true
-            // "invalidMessage":
+          "id": "loginEmail",
+          "class": "login",
+          "placeHolder": this.nls.login.emailPlace,
+          "regExp": "[A-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?",
+          "required": true
+          // "invalidMessage":
         });
         domConstruct.place(loginEmail.domNode, newAcc);
         domConstruct.create("br", null, newAcc);
@@ -2041,15 +2084,15 @@ define(
         });
 
         loginRequest.then(lang.hitch(this, function(response) {
-            console.log(response);
-            if (response) {
-              $(".loginButtons").forEach(domConstruct.destroy);
-              fn.destroyRecursive();
-              ln.destroyRecursive();
-              em.destroyRecursive();
-              dom.byId("loginSelect").innerHTML = "";
-              this.loginSubmitted();
-            }
+          console.log(response);
+          if (response) {
+            $(".loginButtons").forEach(domConstruct.destroy);
+            fn.destroyRecursive();
+            ln.destroyRecursive();
+            em.destroyRecursive();
+            dom.byId("loginSelect").innerHTML = "";
+            this.loginSubmitted();
+          }
         }));
 
       },
@@ -2061,7 +2104,7 @@ define(
           "innerHTML": this.nls.login.thank
         }, dom.byId("loginSelect"));
 
-         var buttons = domConstruct.create("div", {
+        var buttons = domConstruct.create("div", {
           "class": "login center loginButtons"
         }, dom.byId("loginSelect"));
 
@@ -2076,8 +2119,64 @@ define(
           tokenUtils.signIn(this.appConfig.portalUrl, this.appConfig.appId);
         }));
 
+      },
+
+      /**
+       * Loads previously stored cookie at start of session
+       *
+       */
+      loadCredentials: function() {
+
+        this.cookie = this.config.cookie;
+        var jsonString = cookie(this.cookie);
+
+        if (jsonString && jsonString !== "null" && jsonString.length > 4) {
+          var json = JSON.parse(jsonString);
+          if (json.id && json.extent) {
+            var idObject = json.id;
+            var extentObject = new Extent(json.extent);
+            if (idObject.credentials[0].userId === this.credential.userId) {
+              this.map.setExtent(extentObject);
+            }
+          }
+        } else {
+          console.log("no credentials to load");
+        }
+
+      },
+
+      /**
+       * Stores cookie at end of session
+       *
+       */
+      storeCredentials: function() {
+
+        // Make sure there are some credentials to persist
+        if (esri.id.credentials.length === 0) {
+          return;
+        }
+
+        if (this.cookie !== "logout") {
+          // Serialize to a string
+          var idString = JSON.stringify(esri.id.toJson());
+          var extentString = JSON.stringify(this.map.extent.toJson());
+          var string = '{"id":' + idString + ', "extent":' + extentString + '}';
+          // Store a cookie
+          cookie(this.cookie, string, {
+            expires: 24
+          });
+          console.log("wrote credentials");
+        }
+
+      },
+
+      clearCredentials: function() {
+
+        if (esri.id.credentials.length > 0) {
+          esri.id.credentials = [];
+        }
+
       }
 
     });
-  }
-);
+  });
