@@ -13,11 +13,14 @@ define(
     "dojo/_base/declare",
     "dojo/_base/event",
     "dojo/_base/lang",
+    "dojo/_base/unload",
     "dojo/aspect",
+    "dojo/cookie",
     "dojo/Deferred",
     "dojo/dom",
     "dojo/on",
     "dojo/keys",
+    "dojo/json",
     "dojo/dom-style",
     "dojo/query",
     "dojo/dom-construct",
@@ -68,11 +71,14 @@ define(
     declare,
     event,
     lang,
+    baseUnload,
     aspect,
+    cookie,
     Deferred,
     dom,
     on,
     keys,
+    JSON,
     domStyle,
     $,
     domConstruct,
@@ -607,6 +613,9 @@ define(
         this.credential = credential;
         this.engageFeedback(credential);
         domStyle.set($(".signedIn")[0], "display", "block");
+        this.loadCredentials();
+        baseUnload.addOnUnload(lang.hitch(this, this.storeCredentials));
+
 
       },
 
@@ -640,6 +649,10 @@ define(
         if (this.layers.length > 0) {
           this.toggleFeedbackLayersVisibility(false);
         }
+
+        this.storeCredentials();
+        // Clear credentials that persist on logout
+        this.clearCredentials();
 
       },
 
@@ -1057,6 +1070,9 @@ define(
           domStyle.set(dom.byId("provideFeedbackDiv"), "display", "block");
         } else {
           domStyle.set(dom.byId("provideFeedbackDiv"), "display", "none");
+          this.agreeChkNode.checked = true;
+          domClass.add(this.agreeChkNode.checkNode, "checked");
+          this.toggleAllFeedback();
         }
 
       },
@@ -2102,6 +2118,63 @@ define(
           ook.remove();
           tokenUtils.signIn(this.appConfig.portalUrl, this.appConfig.appId);
         }));
+
+      },
+
+      /**
+       * Loads previously stored cookie at start of session
+       *
+       */
+      loadCredentials: function() {
+
+        this.cookie = this.config.cookie;
+        var jsonString = cookie(this.cookie);
+
+        if (jsonString && jsonString !== "null" && jsonString.length > 4) {
+          var json = JSON.parse(jsonString);
+          if (json.id && json.extent) {
+            var idObject = json.id;
+            var extentObject = new Extent(json.extent);
+            if (idObject.credentials[0].userId === this.credential.userId) {
+              this.map.setExtent(extentObject);
+            }
+          }
+        } else {
+          console.log("no credentials to load");
+        }
+
+      },
+
+      /**
+       * Stores cookie at end of session
+       *
+       */
+      storeCredentials: function() {
+
+        // Make sure there are some credentials to persist
+        if (esri.id.credentials.length === 0) {
+          return;
+        }
+
+        if (this.cookie !== "logout") {
+          // Serialize to a string
+          var idString = JSON.stringify(esri.id.toJson());
+          var extentString = JSON.stringify(this.map.extent.toJson());
+          var string = '{"id":' + idString + ', "extent":' + extentString + '}';
+          // Store a cookie
+          cookie(this.cookie, string, {
+            expires: 24
+          });
+          console.log("wrote credentials");
+        }
+
+      },
+
+      clearCredentials: function() {
+
+        if (esri.id.credentials.length > 0) {
+          esri.id.credentials = [];
+        }
 
       }
 

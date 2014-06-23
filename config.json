@@ -4,6 +4,7 @@
     "width": 275,
     "height": 600
   },
+  "cookie": "userExtent",
   "feedbackUrl": "http://74.216.225.66/MyApplication/FeedbackService.svc",
   "editor": {
     "createOptions": {
