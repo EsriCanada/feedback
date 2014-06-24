@@ -195,7 +195,7 @@ define(
         query.inSR = '';
         query.outSR = '';
         query.outFields = ["gfx_management.sde.DataSource.name_official"];
-        var url = this.config.communityUrl + "/MapServer/0";
+        var url = this.agolUser.contributorUrl + "/MapServer/0";
         var queryTask = new QueryTask(url);
         var assignmentCommunities = [];
 
@@ -923,7 +923,7 @@ define(
 
       createAndAttachReport: function(objectid, featureType) {
 
-        var printTask = new PrintTask(this.config.printTaskUrl, {
+        var printTask = new PrintTask(this.agolUser.printTaskUrl, {
           async: true
         });
         var template = new PrintTemplate();
@@ -1108,7 +1108,7 @@ define(
 
       getGeocodeExtents: function() {
 
-        var url = this.config.communityUrl + "/FeatureServer/1";
+        var url = this.agolUser.contributorUrl + "/FeatureServer/1";
         var qt = new QueryTask(url);
         var qp = lang.mixin(new Query(), {
           returnGeometry: false,
@@ -1481,7 +1481,7 @@ define(
 
         //var url = "http://gfx.esri.ca/arcgis/rest/services/Communities/Contributors/MapServer/0";
         //var url = this.config.contributorUrl;
-        var url = this.agolUser.contributorUrl;
+        var url = this.agolUser.contributorUrl + "/MapServer/0";
         var queryTask = new QueryTask(url);
         query.returnGeometry = false;
         query.outFields = fields;
