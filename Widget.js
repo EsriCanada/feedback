@@ -195,7 +195,8 @@ define(
         query.inSR = '';
         query.outSR = '';
         query.outFields = ["gfx_management.sde.DataSource.name_official"];
-        var queryTask = new QueryTask("http://gfx.esri.ca/arcgis/rest/services/Communities/Contributors/MapServer/0");
+        var url = this.config.communityUrl + "/MapServer/0";
+        var queryTask = new QueryTask(url);
         var assignmentCommunities = [];
 
         //var loadingIndicator = new mProgress({ size: 12, center: false, startSpinning: true });
@@ -365,6 +366,11 @@ define(
 
         this.editor.attributeInspector.refresh();
         var curFeature = this.editor.attributeInspector._currentFeature;
+        // var center;
+        // if (curFeature.type = "polygon") {
+
+        // }
+        // this.map.centerAt(curFeature.geometry);
         var atiButtonsDiv = $(".atiButtons")[0];
         var atiAttributes = $('.atiAttributes')[0];
 
@@ -523,7 +529,7 @@ define(
         this.panelManager = PanelManager.getInstance();
 
         if (this.map.layerIds.length < 2) {
-          var url = "http://server.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer";
+          var url = this.config.imageryLayerUrl;
           this.imagery = new ArcGISTiledMapServiceLayer(url, {
             opacity: 0,
             visible: true
@@ -917,7 +923,7 @@ define(
 
       createAndAttachReport: function(objectid, featureType) {
 
-        var printTask = new PrintTask("http://74.216.225.66/arcgis/rest/services/observation/GPServer/Observe", {
+        var printTask = new PrintTask(this.config.printTaskUrl, {
           async: true
         });
         var template = new PrintTemplate();
@@ -1102,7 +1108,8 @@ define(
 
       getGeocodeExtents: function() {
 
-        var qt = new QueryTask("http://gfx.esri.ca/arcgis/rest/services/Communities/Contributors/FeatureServer/1");
+        var url = this.config.communityUrl + "/FeatureServer/1";
+        var qt = new QueryTask(url);
         var qp = lang.mixin(new Query(), {
           returnGeometry: false,
           where: "1=1",
@@ -1292,6 +1299,10 @@ define(
               html.place(widget.domNode, jimuConfig.mainPageId);
               widget.startup();
 
+              aspect.after(widget, "highlightRow", lang.hitch(this, function() {
+                widget.selectAll(false);
+              }));
+
               // Handle checkbox node
               var nodes = $(".dijitInline.dijitButtonNode", ($(".dijitToolbar")[0]));
               var closeNode = nodes[nodes.length - 1];
@@ -1300,6 +1311,7 @@ define(
                 if (this.ChkNode1.checked) {
                   this.ChkNode1.checked = false;
                   domClass.remove(this.ChkNode1.checkNode, "checked");
+                  widget.selectAll(false);
                   this.widgetManager.closeWidget(this.attributeTable);
                 }
               }));
