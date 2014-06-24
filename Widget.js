@@ -320,7 +320,7 @@ define(
         var sortAttributes = [{
           attribute: "name",
           ascending: true
-                }];
+        }];
         store.fetch({
           onComplete: lang.hitch(this, completed),
           onError: lang.hitch(this, error),
@@ -768,7 +768,7 @@ define(
             var linfo = [{
               layer: layer,
               title: "Feedback Status"
-                        }];
+            }];
 
             if (!dom.byId("legendDiv")) {
               domConstruct.create("div", {
@@ -813,6 +813,7 @@ define(
         }
 
       },
+
       engageFeedbackHandleFailed: function(response, io) {
 
         console.log(response);
@@ -1114,12 +1115,12 @@ define(
           returnGeometry: false,
           where: "1=1",
           outFields: ["x_min",
-                        "y_min",
-                        "x_max",
-                        "y_max",
-                        "name_common",
-                        "name_official"
-                    ]
+            "y_min",
+            "x_max",
+            "y_max",
+            "name_common",
+            "name_official"
+          ]
         });
 
         functional.forIn(this.config.contributorDataFields, function(f) {
@@ -1282,24 +1283,27 @@ define(
                 "layer": {
                   "url": this.agolUser.layerInfos[0].featureLayer.url
                 }
-                            }, {
+              }, {
                 "name": this.agolUser.layerInfos[1].featureLayer.name,
                 "layer": {
                   "url": this.agolUser.layerInfos[1].featureLayer.url
                 }
-                            }, {
+              }, {
                 "name": this.agolUser.layerInfos[2].featureLayer.name,
                 "layer": {
                   "url": this.agolUser.layerInfos[2].featureLayer.url
                 }
-                            }];
+              }];
 
               widget.config.layers = layers;
 
               html.place(widget.domNode, jimuConfig.mainPageId);
               widget.startup();
 
-              aspect.after(widget, "highlightRow", lang.hitch(this, function() {
+              // aspect.after(widget, "highlightRow", lang.hitch(this, function() {
+              //   widget.selectAll(false);
+              // }));
+              aspect.before(this.editor, "_activateDrawToolbar", lang.hitch(this, function() {
                 widget.selectAll(false);
               }));
 
@@ -1881,41 +1885,6 @@ define(
 
       },
 
-      createSimpleDialog: function(name, content, title) {
-
-        new Dialog({
-          "id": name + "Dialog",
-          "title": title
-        });
-
-        new ContentPane({
-          "id": name + "Pane",
-          "class": "simplePane",
-          "content": content
-        });
-
-        new ContentPane({
-          "id": name + "Buttons",
-          "class": "buttons"
-        });
-
-        domConstruct.create("div", {
-          "id": name + "OK",
-          "class": "jimu-btn",
-          "innerHTML": this.nls.commentSubmit
-        });
-
-        registry.byId(name + "Buttons").addChild(dom.byId(name + "OK"));
-        registry.byId(name + "Dialog").addChild(registry.byId(name + "Pane"));
-        registry.byId(name + "Dialog").addChild(registry.byId(name + "Buttons"));
-
-        on(dom.byId(name + "OK"), "click", function() {
-          registry.byId(name + "Dialog").hide();
-        });
-        registry.byId(name + "Dialog").startup();
-
-      },
-
       userLogin: function() {
 
         if (!dom.byId("loginSelect")) {
@@ -2194,4 +2163,5 @@ define(
       }
 
     });
-  });
+  }
+);
