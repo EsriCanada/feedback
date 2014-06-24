@@ -121,7 +121,6 @@ define(
     return declare([BaseWidget, _WidgetsInTemplateMixin], {
 
       baseClass: "jimu-widget-gfx",
-        // "feedbackUrl": "http://74.216.225.66/MyApplication/FeedbackService.svc",
 
       name: "GFX",
 
