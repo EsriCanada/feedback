@@ -120,9 +120,10 @@ define(
     //To create a widget, you need to derive from BaseWidget.
     return declare([BaseWidget, _WidgetsInTemplateMixin], {
 
-      baseClass: 'jimu-widget-gfx',
+      baseClass: "jimu-widget-gfx",
+        // "feedbackUrl": "http://74.216.225.66/MyApplication/FeedbackService.svc",
 
-      name: 'GFX',
+      name: "GFX",
 
       inviteId: null,
       credential: null,
@@ -135,17 +136,17 @@ define(
       postCreate: function() {
 
         this.inherited(arguments);
-        console.log('postCreate');
+        console.log("postCreate");
 
         // Changes
         // var popup = new Popup(null, domConstruct.create("div"));
         // this.map.setInfoWindow(popup);
 
         //console.log(this.appConfig.httpProxy);
-        $(this.logoNode).attr('src', this.folderUrl + 'images/CommunityMapsLogo.png');
+        $(this.logoNode).attr("src", this.folderUrl + "images/CommunityMapsLogo.png");
 
         this.map.infoWindow.on("show", lang.hitch(this, function() {
-          console.log('show');
+          console.log("show");
           if (!tokenUtils.userHaveSignIn()) {
             return;
           }
@@ -174,7 +175,7 @@ define(
         }));
 
         this.map.infoWindow.on("hide", lang.hitch(this, function() {
-          console.log('hide');
+          console.log("hide");
           if (dom.byId("commentDiv")) {
             dom.byId("commentDiv").innerHTML = "";
           }
@@ -192,8 +193,8 @@ define(
 
         var query = new Query();
         query.geometry = graphic.geometry;
-        query.inSR = '';
-        query.outSR = '';
+        query.inSR = "";
+        query.outSR = "";
         query.outFields = ["gfx_management.sde.DataSource.name_official"];
         var url = this.agolUser.contributorUrl + "/MapServer/0";
         var queryTask = new QueryTask(url);
@@ -252,15 +253,15 @@ define(
 
         for (var k in data) {
           this.items.push({
-            'name': data[k].name,
+            "name": data[k].name,
             id: ctr.toString()
           });
           ctr++;
         }
 
         var dataItems = {
-          identifier: 'name',
-          label: 'name',
+          identifier: "name",
+          label: "name",
           items: this.items
         };
 
@@ -269,7 +270,7 @@ define(
         });
         store.comparatorMap = {};
 
-        store.comparatorMap['name'] = function(a, b) {
+        store.comparatorMap["name"] = function(a, b) {
           if (a < b) return -1;
           if (a > b) return 1;
           return 0;
@@ -308,7 +309,7 @@ define(
               onChange: function(data) {
                 //onchange(location);
               },
-              value: ''
+              value: ""
             }, id + "Div");
           }
           this.styleComboBoxes();
@@ -444,8 +445,8 @@ define(
 
           // If creating a new feature
         } else {
-          domStyle.set($('.atiAttributes').children().children().children()[1], "display", "none");
-          domStyle.set($('.atiAttributes').children().children().children()[4], "display", "none");
+          domStyle.set($(".atiAttributes").children().children().children()[1], "display", "none");
+          domStyle.set($(".atiAttributes").children().children().children()[4], "display", "none");
           var attachmentEditorChildren = $(".atiAttachmentEditor")[0].children;
           array.forEach(attachmentEditorChildren, this._showElements, this);
           array.forEach(attachmentEditorChildren[1].children, this._showElements, this);
@@ -1108,7 +1109,7 @@ define(
 
       getGeocodeExtents: function() {
 
-        var url = this.agolUser.contributorUrl + "/FeatureServer/1";
+        var url = this.config.contributorUrl + "/FeatureServer/1";
         var qt = new QueryTask(url);
         var qp = lang.mixin(new Query(), {
           returnGeometry: false,
@@ -1545,7 +1546,8 @@ define(
         addCommentPath.applyTransform(Gfx.matrix.scale(0.6));
 
         $(".addCommentButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
-          this.createCommentsDiv(-2, buttonsDiv);
+          this.status = -2;
+          this.createCommentsDiv(buttonsDiv);
         }));
 
         // Create buttons if admin user
@@ -1582,8 +1584,8 @@ define(
           var oc = $(".feedbackStatusButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
             var splitTest = btn.currentTarget.id.split("changeStatus_");
             if (splitTest.length > 1) {
-              var status = splitTest[1];
-              this.createCommentsDiv(status, buttonsDiv);
+              this.status = splitTest[1];
+              this.createCommentsDiv(buttonsDiv);
             }
           }));
 
@@ -1611,7 +1613,8 @@ define(
           reassignPath.applyTransform(Gfx.matrix.scale(0.6));
 
           $(".reassignButton", buttonsDiv).on('click', lang.hitch(this, function() {
-            this.createCommentsDiv(-1, buttonsDiv);
+            this.status = -1;
+            this.createCommentsDiv(buttonsDiv);
             this.findIntersectingCommunities(this.editor.attributeInspector._currentFeature);
             //this.reassign = true;
           }));
@@ -1624,7 +1627,7 @@ define(
             oc.remove();
           }
           od.remove();
-          this.destroyButtons(buttonsDiv);
+          this.destroyButtons();
         }));
         // Destroy buttons on change
         var ac = this.editor.attributeInspector.on("next", lang.hitch(this, function() {
@@ -1633,8 +1636,8 @@ define(
           }
           ac.remove();
           $(".feedbackStatusButton", buttonsDiv).forEach(domConstruct.destroy);
-          if (registry.byId('commentPane')) {
-            registry.byId('commentPane').destroyRecursive();
+          if (registry.byId("commentPane")) {
+            registry.byId("commentPane").destroyRecursive();
           }
         }));
 
@@ -1643,21 +1646,21 @@ define(
       destroyButtons: function() {
 
         $(".feedbackStatusButton", $(".buttonsDiv")[0]).forEach(domConstruct.destroy);
-        if (registry.byId('commentPane')) {
-          registry.byId('commentPane').destroyRecursive();
+        if (registry.byId("commentPane")) {
+          registry.byId("commentPane").destroyRecursive();
         }
         $(".addCommentDiv").forEach(domConstruct.destroy);
         $(".buttonsDiv").forEach(domConstruct.destroy);
 
       },
 
-      createCommentsDiv: function(status, buttonsDiv) {
+      createCommentsDiv: function(buttonsDiv) {
 
         if (!registry.byId("commentPane")) {
 
-          domStyle.set(buttonsDiv, 'display', 'none');
+          domStyle.set(buttonsDiv, "display", "none");
 
-          new ContentPane({
+          var cp = new ContentPane({
             "class": "commentPane",
             "id": "commentPane"
           }, $(".addCommentDiv")[0]);
@@ -1678,7 +1681,7 @@ define(
           domConstruct.create("br", null, dom.byId("reassignDiv"));
           domConstruct.create("br", null, dom.byId("reassignDiv"));
 
-          if (status !== -1) {
+          if (this.status !== -1) {
             domStyle.set(dom.byId("reassignDiv"), 'display', 'none');
           }
 
@@ -1720,7 +1723,7 @@ define(
           var ook = on(commentOK, 'click', lang.hitch(this, function() {
 
             if (registry.byId("fbComment").value && registry.byId("fbComment").value.length > 0) {
-              this.sendComment(status);
+              this.sendComment();
               ook.remove();
             } else {
               this.noCommentDiv();
@@ -1734,35 +1737,36 @@ define(
           //   }
           // }));
 
-          var ocan = on(commentCancel, 'click', lang.hitch(this, function() {
+          var ocan = on(commentCancel, "click", lang.hitch(this, function() {
             // ocan.remove();
-            domStyle.set($(".addCommentDiv")[0], 'display', 'none');
-            domStyle.set(dom.byId("reassignDiv"), 'display', 'none');
-            domStyle.set(buttonsDiv, 'display', 'block');
+            domStyle.set($(".addCommentDiv")[0], "display", "none");
+            domStyle.set(dom.byId("reassignDiv"), "display", "none");
+            domStyle.set(buttonsDiv, "display", "block");
           }));
 
         } else {
-          domStyle.set(buttonsDiv, 'display', 'none');
-          domStyle.set($(".addCommentDiv")[0], 'display', 'block');
-          if (status === -1) {
-            domStyle.set(dom.byId("reassignDiv"), 'display', 'block');
+          domStyle.set(buttonsDiv, "display", "none");
+          domStyle.set($(".addCommentDiv")[0], "display", "block");
+          if (this.status === -1) {
+            domStyle.set(dom.byId("reassignDiv"), "display", "block");
           }
           registry.byId("fbComment").reset();
           registry.byId("fbComment").focus();
         }
       },
-      sendComment: function(status) {
+
+      sendComment: function() {
 
         var comment = registry.byId("fbComment").value;
         // reassign
-        if (status === -1) {
+        if (this.status === -1) {
           this.changeCommunity(this.communityChange, comment);
           // comment only
-        } else if (status === -2) {
+        } else if (this.status === -2) {
           this.submitComment(comment, this.editor.attributeInspector._currentFeature);
           // all other buttons
         } else {
-          this.changeFeedback(status, comment);
+          this.changeFeedback(comment);
         }
 
       },
@@ -1780,10 +1784,10 @@ define(
 
       },
 
-      changeFeedback: function(status, comment) {
+      changeFeedback: function(comment) {
 
         var curFeature = this.editor.attributeInspector._currentFeature;
-        var changeURL = this.config.feedbackUrl + "/ChangeFeedback?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&status=" + status + "&observer=" + curFeature.attributes.Creator + "&comment=" + comment + "&community=" + curFeature.attributes.mgmt_data_source;
+        var changeURL = this.config.feedbackUrl + "/ChangeFeedback?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&status=" + this.status + "&observer=" + curFeature.attributes.Creator + "&comment=" + comment + "&community=" + curFeature.attributes.mgmt_data_source;
         var changeRequest = esriRequest({
           url: changeURL,
           handleAs: "json"

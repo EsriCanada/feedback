@@ -5,9 +5,8 @@
     "height": 600
   },
   "cookie": "userExtent",
-  "feedbackUrl": "http://74.216.225.66/MyApplication/FeedbackService.svc",
-  "communityUrl": "http://gfx.esri.ca/arcgis/rest/services/Communities/Contributors",
-  "printTaskUrl": "http://74.216.225.66/arcgis/rest/services/observation/GPServer/Observe",
+  "feedbackUrl": "http://localhost:24900/FeedbackService.svc",
+  "contributorUrl": "http://gfx.esri.ca/arcgis/rest/services/Communities/Contributors",
   "imageryLayerUrl": "http://server.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer",
   "editor": {
     "createOptions": {
