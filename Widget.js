@@ -8,6 +8,7 @@ define(
     "jimu/dijit/CheckBox",
     "jimu/tokenUtils",
     "jimu/dijit/IFramePane",
+    "jimu/dijit/LoadingShelter",
     "dojo/_base/html",
     "dojo/_base/array",
     "dojo/_base/declare",
@@ -66,6 +67,7 @@ define(
     CheckBox,
     tokenUtils,
     IFramePane,
+    LoadingShelter,
     html,
     array,
     declare,
@@ -453,12 +455,18 @@ define(
           this.styleComboBoxes();
         }
 
-        if (registry.findWidgets(this.editor.attributeInspector.attributeTable)[1].displayedValue === "") {
-          registry.findWidgets(this.editor.attributeInspector.attributeTable)[1].set("displayedValue", "New Observation");
+        var attrTable = registry.findWidgets(this.editor.attributeInspector.attributeTable);
+        if (attrTable[1].displayedValue === "") {
+          attrTable[1].set("displayedValue", "New Observation");
           this.queryContributor(this.map.infoWindow._location).then(lang.hitch(this, function(result) {
-            var contributorId = result.features[0].attributes["gfx_management.sde.DataSource.id"];
-            var commonName = result.features[0].attributes["gfx_management.sde.DataSource.name_common"];
-            registry.findWidgets(this.editor.attributeInspector.attributeTable)[0].set("displayedValue", contributorId);
+            var contributorId;
+            if (result && result.features.length > 0) {
+              contributorId = result.features[0].attributes["gfx_management.sde.DataSource.name_official"];
+              // var commonName = result.features[0].attributes["gfx_management.sde.DataSource.name_common"];
+            } else {
+              contributorId = this.agolUser.defaultContributor;
+            }
+            attrTable[0].set("displayedValue", contributorId);
           }));
         } else {
           console.log("queryConversation");
@@ -637,8 +645,8 @@ define(
         if (registry.byId("feedbackLegend")) {
           registry.byId("feedbackLegend").destroy();
         }
-        domStyle.set("logoPanel", "display", "block");
-        domStyle.set(dom.byId("groupInvitePanel"), "display", "none");
+        // domStyle.set("logoPanel", "display", "block");
+        // domStyle.set(dom.byId("groupInvitePanel"), "display", "none");
         domStyle.set(dom.byId("provideFeedbackDiv"), "display", "none");
         // domStyle.set(dom.byId("submitConversation"), "display", "none");
         domStyle.set(dom.byId("viewAllFeedback"), "display", "none");
@@ -684,7 +692,7 @@ define(
       acceptInvitationSucceeded: function(response, io) {
 
         console.log(response);
-        domStyle.set(dom.byId("groupInvitePanel"), "display", "none");
+        // domStyle.set(dom.byId("groupInvitePanel"), "display", "none");
         this.engageFeedback(this.credential);
         // this.engageEditing();
 
@@ -761,7 +769,7 @@ define(
 
         if (response.isAuthenticated === true && response.isMember) {
           if (response.isMember === true) {
-            domStyle.set("groupInvitePanel", "display", "none");
+            // domStyle.set("groupInvitePanel", "display", "none");
             // domStyle.set("logoPanel", "display", "none");
             var layer = new FeatureLayer(this.agolUser.layerInfos[0].featureLayer.url, this.agolUser.layerInfos[0].featureLayer.options);
 
@@ -800,15 +808,14 @@ define(
 
           this.inviteId = response.userInvitation.id;
 
-          domStyle.set("groupInvitePanel", "display", "block");
-          dom.byId("userId").innerHTML = this.credential.userId + " (" + response.email + ")";
-          dom.byId("userMessage").innerHTML = this.nls.gfxGroupInvite;
-          domStyle.set(dom.byId("acceptInvite"), "display", "inline");
-          domStyle.set(dom.byId("declineInvite"), "display", "inline");
+          // domStyle.set("groupInvitePanel", "display", "block");
+          // dom.byId("userId").innerHTML = this.credential.userId + " (" + response.email + ")";
+          // dom.byId("userMessage").innerHTML = this.nls.gfxGroupInvite;
+          // domStyle.set(dom.byId("acceptInvite"), "display", "inline");
+          // domStyle.set(dom.byId("declineInvite"), "display", "inline");
 
-          //on(dom.byId("acceptInvite"), "click", this.acceptInvite);
-          //on(dom.byId("declineInvite"), "click", this.declineInvite);
-
+          // Streamlining login process
+          this.acceptInvite();
           // console.log(this.inviteId);
         }
 
@@ -1295,7 +1302,7 @@ define(
               // Handle editor
               aspect.before(this.editor, "_activateDrawToolbar", lang.hitch(this, function() {
                 widget.selectAll(false);
-                this.checkCurFeature();
+                this.clearCurFeature();
               }));
 
               // Handle checkbox node
@@ -1318,18 +1325,16 @@ define(
 
       },
 
-      checkCurFeature: function() {
-
-        var curFeature = this.editor.attributeInspector._currentFeature;
-        // Clear attributes
-        if (curFeature) {
+      clearCurFeature: function() {
+        if (this.editor.attributeInspector._currentFeature) {
           var layer = this.editor.attributeInspector._currentFeature._graphicsLayer;
-          var id = layer.id;
-          this.map.getLayer(id).clearSelection();
+          if (layer) {
+            var id = layer.id;
+            this.map.getLayer(id).clearSelection();
+          }
         }
 
       },
-
       toggleImagery: function() {
 
         if (this.ChkNode2.checked) {
@@ -1425,7 +1430,6 @@ define(
 
       submitComment: function(comment, curFeature) {
 
-        this.map.infoWindow.hide();
         var obs_guid = curFeature.attributes.globalid;
 
         var featureLayer = new FeatureLayer(this.agolUser.conversationUrl);
@@ -1440,6 +1444,7 @@ define(
 
         featureLayer.applyEdits([commentRecord], null, null).then(lang.hitch(this, function(result) {
           console.log(result);
+          this.hideSpinner();
           this.queryConversation();
         }));
 
@@ -1455,22 +1460,19 @@ define(
 
       queryContributor: function(point) {
 
+
+        // Issue with table and how scale_small and scale_large are set
         var deferred = new Deferred();
 
-        //console.log(point);
         var mapScale = this.map.getScale();
         var where = "(scale_small IS Null OR scale_small >= " + mapScale + ") AND (scale_large IS Null OR scale_large <= " + mapScale + ")";
 
         var query = new Query();
         query.where = where;
         query.geometry = point;
-        //var fields = ["*"];
         var fields = this.agolUser.contributorFields;
-        //var fields = this.config.contributorFields;
-        //gfx_management.sde.DataSource.id,gfx_management.sde.DataSource.name_common,gfx_management.sde.DataSource.x_min,gfx_management.sde.DataSource.x_max,gfx_management.sde.DataSource.y_min,gfx_management.sde.DataSource.y_max,gfx_management.sde.Default_MGMT.priority
+        //gfx_management.sde.DataSource.name_official,gfx_management.sde.DataSource.name_common,gfx_management.sde.DataSource.x_min,gfx_management.sde.DataSource.x_max,gfx_management.sde.DataSource.y_min,gfx_management.sde.DataSource.y_max,gfx_management.sde.Default_MGMT.priority
 
-        //var url = "http://gfx.esri.ca/arcgis/rest/services/Communities/Contributors/MapServer/0";
-        //var url = this.config.contributorUrl;
         var url = this.agolUser.contributorUrl + "/MapServer/0";
         var queryTask = new QueryTask(url);
         query.returnGeometry = false;
@@ -1702,11 +1704,12 @@ define(
           registry.byId("fbComment").focus();
 
 
-          var ook = on(commentOK, 'click', lang.hitch(this, function() {
+          var ook = on(commentOK, "click", lang.hitch(this, function() {
 
             if (registry.byId("fbComment").value && registry.byId("fbComment").value.length > 0) {
               this.sendComment();
               ook.remove();
+              // oe.remove();
             } else {
               this.noCommentDiv();
             }
@@ -1714,13 +1717,18 @@ define(
 
           // var oe = on(registry.byId("fbComment"), "keydown", lang.hitch(this, function(e) {
           //   if (e.keyCode === keys.ENTER) {
-          //     oe.remove();
-          //     this.sendComment();
+          //     if (registry.byId("fbComment").value && registry.byId("fbComment").value.length > 0) {
+          //       this.sendComment();
+          //       oe.remove();
+          //       ook.remove();
+          //     } else {
+          //       this.noCommentDiv();
+          //       event.stop(e);
+          //     }
           //   }
           // }));
 
           var ocan = on(commentCancel, "click", lang.hitch(this, function() {
-            // ocan.remove();
             domStyle.set($(".addCommentDiv")[0], "display", "none");
             domStyle.set(dom.byId("reassignDiv"), "display", "none");
             domStyle.set(buttonsDiv, "display", "block");
@@ -1740,6 +1748,8 @@ define(
       sendComment: function() {
 
         var comment = registry.byId("fbComment").value;
+        this.map.infoWindow.hide();
+        this.showSpinner();
         // reassign
         if (this.status === -1) {
           this.changeCommunity(this.communityChange, comment);
@@ -1866,6 +1876,10 @@ define(
       userLogin: function() {
 
         if (!dom.byId("loginSelect")) {
+
+          var overlay = domConstruct.create("div", {
+            "class": "login overlay"
+          }, document.body);
 
           var loginPane = domConstruct.create("div", {
             "id": "loginSelect",
@@ -2120,7 +2134,7 @@ define(
         // Serialize to a string
         var idString = JSON.stringify(esri.id.toJson());
         var extentString = JSON.stringify(this.map.extent.toJson());
-        var string = "{'id':" + idString + ", 'extent':" + extentString + "}";
+        var string = '{"id":' + idString + ', "extent":' + extentString + '}';
         // Store a cookie
         cookie(this.cookie, string, {
           expires: 24
@@ -2133,6 +2147,32 @@ define(
 
         if (esri.id.credentials.length > 0) {
           esri.id.credentials = [];
+        }
+
+      },
+
+      showSpinner: function() {
+
+        if (!this.loading) {
+          this.loading = new LoadingShelter();
+          this.loading.placeAt(document.body);
+          this.loading.startup();
+        }
+        if (!this.spinnerVisible) {
+          // domConstruct.create("div", {
+          //   "class": "spinner overlay"
+          // }, document.body);
+          this.loading.show();
+          this.spinnerVisible = true;
+        }
+      },
+
+      hideSpinner: function() {
+
+        if (this.spinnerVisible) {
+          // $(".spinner").forEach(domConstruct.destroy);
+          this.loading.hide();
+          this.spinnerVisible = false;
         }
 
       }
