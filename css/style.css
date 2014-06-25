@@ -293,8 +293,9 @@
   -webkit-box-align: center;
   -webkit-box-orient: vertical;
   -webkit-box-pack: center;
-  -webkit-transition: 200ms opacity;
-  background-color: rgba(255, 255, 255, 0.75);
+  -webkit-transition: 300ms opacity;
+  transition: 300ms opacity;
+  background-color: rgba(100, 100, 100, 0.5);
   bottom: 0;
   display: -webkit-box;
   left: 0;
@@ -304,4 +305,3 @@
   right: 0;
   top: 0;
 }
-
