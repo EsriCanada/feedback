@@ -372,14 +372,14 @@ define(
         // }
         // this.map.centerAt(curFeature.geometry);
         var atiButtonsDiv = $(".atiButtons")[0];
-        var atiAttributes = $('.atiAttributes')[0];
+        var atiAttributes = $(".atiAttributes")[0];
 
         var commentDiv, attachmentDiv, buttonsDiv;
         // If accessing a created feature
         // NOTE: SOMETIMES GLOBALID NOT BEING GENERATED!!!
         if (curFeature.attributes.objectid) {
           this.map.infoWindow.resize(this.config.infoWindow.width, this.config.infoWindow.height);
-          domStyle.set($('.atiAttributes').children()[0], "display", "none");
+          domStyle.set($(".atiAttributes").children()[0], "display", "none");
           domStyle.set($(".atiAttachmentEditor")[0], "display", "none");
 
           this.createInfoTemplate(curFeature).then(lang.hitch(this, function(template) {
@@ -461,7 +461,7 @@ define(
             registry.findWidgets(this.editor.attributeInspector.attributeTable)[0].set("displayedValue", contributorId);
           }));
         } else {
-          console.log('queryConversation');
+          console.log("queryConversation");
           this.queryConversation(commentDiv); //this.editor.attributeInspector._currentFeature);
         }
 
@@ -553,21 +553,21 @@ define(
         this.getGeocodeExtents();
 
         //this.mapIdNode.innerHTML = 'map id:' + this.map.id;
-        console.log('startup');
+        console.log("startup");
 
       },
 
       onOpen: function() {
 
-        console.log('onOpen');
+        console.log("onOpen");
 
         if (tokenUtils.userHaveSignIn()) {
-          console.log('yay');
+          console.log("yay");
           //this.onSignIn(tokenUtils.getCredential());
         } else {
           //this.onSignOut();
           this.userLogin();
-          console.log('nay');
+          console.log("nay");
           // tokenUtils.signIn(this.appConfig.portalUrl, this.appConfig.appId);
         }
 
@@ -586,7 +586,7 @@ define(
 
       onClose: function() {
 
-        console.log('onClose');
+        console.log("onClose");
         // this.toggleFeedbackLayersVisibility(false);
         // if (this.attributeTable) {
         //   this.widgetManager.closeWidget(this.attributeTable);
@@ -600,20 +600,20 @@ define(
 
       onMinimize: function() {
 
-        console.log('onMinimize');
+        console.log("onMinimize");
 
       },
 
       onMaximize: function() {
 
-        console.log('onMaximize');
+        console.log("onMaximize");
 
       },
 
       onSignIn: function(credential) {
 
         /* jshint unused:false*/
-        console.log('onSignIn');
+        console.log("onSignIn");
         console.log(credential);
         //domStyle.set("logoPanel", "display", "none");
         this.credential = credential;
@@ -627,7 +627,7 @@ define(
 
       onSignOut: function() {
 
-        console.log('onSignOut');
+        console.log("onSignOut");
         if (dom.byId("commentDiv")) {
           dom.byId("commentDiv").innerHTML = "";
         }
@@ -903,9 +903,11 @@ define(
 
       refreshFeedbackLayer: function(layer) {
 
-        var id = layer.id;
-        this.map.getLayer(id).clearSelection();
-        this.map.getLayer(id).refresh();
+        if (layer) {
+          var id = layer.id;
+          this.map.getLayer(id).clearSelection();
+          this.map.getLayer(id).refresh();
+        }
 
       },
 
@@ -913,6 +915,7 @@ define(
 
         // console.log(result);
         if (result.adds.length > 0) {
+
           console.log("OID: " + result.adds[0].objectId);
           console.log("Scale: " + this.map.getScale());
           this.createAndAttachReport(result.adds[0].objectId, result.target.name);
@@ -938,9 +941,9 @@ define(
         template.preserveScale = false;
 
         var layoutOptions = {
-          'copyrightText': "copyrightText",
-          'authorText': 'authorText',
-          'titleText': 'titleText'
+          "copyrightText": "copyrightText",
+          "authorText": "authorText",
+          "titleText": "titleText"
         };
 
         var params = new PrintParameters();
@@ -962,7 +965,7 @@ define(
           email: this.agolUser.email
         };
         console.log(printTask);
-        aspect.after(printTask, 'onComplete', lang.hitch(this, this.printSuccessful), true);
+        aspect.after(printTask, "onComplete", lang.hitch(this, this.printSuccessful), true);
         //aspect.after(printTask, 'onError', lang.hitch(this, this.submitError),true);
         printTask.execute(params);
 
@@ -1094,7 +1097,7 @@ define(
           var ctr = 0;
           for (var k in this.extents) {
             extentName.push({
-              'name': k
+              "name": k
             });
           }
 
@@ -1229,22 +1232,11 @@ define(
           this.editor.destroy();
           this.layers.length = 0;
           this.editor = null;
-          // var editDiv = domConstruct.create("div", {
-          //   style: {
-          //     width: "100%",
-          //     height: "199px",
-          //     id: "editorDiv"
-          //   }
-          // });
-          // domConstruct.place(editDiv, dom.byId("provideFeedbackDiv"));
         }
 
       },
 
       toggleAllFeedback: function() {
-
-        //console.log(this.agreeChkNode.checked);
-        //console.log(this.layers);
 
         var a = array.some(this.layers, lang.hitch(this, function(layer) {
           if (this.agreeChkNode.checked) {
@@ -1300,11 +1292,10 @@ define(
               html.place(widget.domNode, jimuConfig.mainPageId);
               widget.startup();
 
-              // aspect.after(widget, "highlightRow", lang.hitch(this, function() {
-              //   widget.selectAll(false);
-              // }));
+              // Handle editor
               aspect.before(this.editor, "_activateDrawToolbar", lang.hitch(this, function() {
                 widget.selectAll(false);
+                this.checkCurFeature();
               }));
 
               // Handle checkbox node
@@ -1327,10 +1318,19 @@ define(
 
       },
 
-      toggleImagery: function() {
+      checkCurFeature: function() {
 
-        //console.log(this.agreeChkNode.checked);
-        //console.log(this.layers);
+        var curFeature = this.editor.attributeInspector._currentFeature;
+        // Clear attributes
+        if (curFeature) {
+          var layer = this.editor.attributeInspector._currentFeature._graphicsLayer;
+          var id = layer.id;
+          this.map.getLayer(id).clearSelection();
+        }
+
+      },
+
+      toggleImagery: function() {
 
         if (this.ChkNode2.checked) {
           this.imagery.show();
@@ -1343,17 +1343,12 @@ define(
 
       queryConversation: function(div) { //feature
 
-        // console.log(this.editor.attributeInspector._currentFeature.attributes["globalid"]);
         var oid = this.editor.attributeInspector._currentFeature.attributes.globalid;
         if (!this.commentLayer) {
           this.commentLayer = new FeatureLayer(this.agolUser.conversationUrl);
         }
-        //var featureLayer = new FeatureLayer(this.config.conversationUrl);
 
-        //console.log(feature.attributes[feature.getLayer().objectIdField]);
-        //var where = "obs_guid= '5888c59b-f8db-4667-9d94-cabd599339ff'";
         var where = "obs_guid = '" + oid + "'";
-
         var query = new Query();
         query.where = where;
 
@@ -1368,16 +1363,7 @@ define(
           if (result.features && result.features.length > 0) {
             this.populateCommentDiv(result, div);
           }
-          // domConstruct.create("br", null, commentDiv);
-          // domConstruct.create("div", {
-          //   "id": "convoButton",
-          //   "class": "jimu-btn submitButton",
-          //   "innerHTML": this.nls.submitComment
-          // }, commentDiv);
 
-          // domStyle.set(dom.byId("submitConversation"), "display", "inline");
-
-          //console.log(result.features[0].attributes[field]);
         }));
 
       },
@@ -1493,15 +1479,12 @@ define(
           this.queryTaskSucceeded(results, deferred);
         }), lang.hitch(this, this.queryTaskFailed));
 
-        //deferred.resolve(queryTask);
-
         return deferred.promise;
 
       },
 
       queryTaskSucceeded: function(results, deferred) {
 
-        //console.log(results);
         deferred.resolve(results);
 
       },
@@ -1522,7 +1505,6 @@ define(
 
       showFeedbackButtons: function(buttonsDiv) {
 
-        // domConstruct.create("hr class='greyHR narrowHR'", null, buttonsDiv);
         // addCommentButton
         var addCommentButton = domConstruct.create("div", {
           "id": "addCommentButton",
@@ -1548,7 +1530,7 @@ define(
         addCommentPath.setStroke(this.config.commentGraphic.colour);
         addCommentPath.applyTransform(Gfx.matrix.scale(0.6));
 
-        $(".addCommentButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
+        $(".addCommentButton", buttonsDiv).on("click", lang.hitch(this, function(btn) {
           this.status = -2;
           this.createCommentsDiv(buttonsDiv);
         }));
@@ -1557,7 +1539,6 @@ define(
         if (this.agolUser.isAdmin) {
           // Most other buttons dependent on this logic
           var feedbackButtons = this.config.FeedbackWorkflow[this.editor.attributeInspector._currentFeature.attributes.feedback_status];
-          // console.log(this.editor.attributeInspector._currentFeature.attributes.feedback_status);
 
           // Add appropriate buttons to infoWindow
           array.forEach(feedbackButtons, function(entry) {
@@ -1584,7 +1565,7 @@ define(
             path.applyTransform(Gfx.matrix.scale(0.6));
           }, this);
 
-          var oc = $(".feedbackStatusButton", buttonsDiv).on('click', lang.hitch(this, function(btn) {
+          var oc = $(".feedbackStatusButton", buttonsDiv).on("click", lang.hitch(this, function(btn) {
             var splitTest = btn.currentTarget.id.split("changeStatus_");
             if (splitTest.length > 1) {
               this.status = splitTest[1];
@@ -1619,9 +1600,7 @@ define(
             this.status = -1;
             this.createCommentsDiv(buttonsDiv);
             this.findIntersectingCommunities(this.editor.attributeInspector._currentFeature);
-            //this.reassign = true;
           }));
-
         }
 
         // Destroy buttons and div on close
@@ -1805,7 +1784,6 @@ define(
 
         var layer = this.editor.attributeInspector._currentFeature._graphicsLayer;
         this.refreshFeedbackLayer(layer);
-        // console.log(response);
         console.log('success');
         // var title = "Feedback status submitted";
         // var message = "Feedback status submitted.";
@@ -1844,7 +1822,7 @@ define(
         var layer = this.editor.attributeInspector._currentFeature._graphicsLayer;
         this.refreshFeedbackLayer(layer);
         // console.log(response);
-        console.log('CommunitySuccess');
+        console.log("CommunitySuccess");
         // var title = "Community status submitted";
         // var message = "Community status submitted.";
         // if (!registry.byId("CommunityStatusDialog")) {
@@ -1896,7 +1874,7 @@ define(
 
           domConstruct.create("img", {
             "class": "login center logo",
-            "src": this.folderUrl + 'images/CommunityMapsLogo.png'
+            "src": this.folderUrl + "images/CommunityMapsLogo.png"
           }, loginPane);
 
           domConstruct.create("div", {
@@ -1929,8 +1907,8 @@ define(
           position.top = (box.h - position.height) / 2;
 
           domStyle.set(dom.byId("loginSelect"), {
-            left: position.left + 'px',
-            top: position.top + 'px'
+            left: position.left + "px",
+            top: position.top + "px"
           });
 
           var os = on(loginSelect, "click", lang.hitch(this, function() {
@@ -2139,18 +2117,15 @@ define(
         if (esri.id.credentials.length === 0) {
           return;
         }
-
-        if (this.cookie !== "logout") {
-          // Serialize to a string
-          var idString = JSON.stringify(esri.id.toJson());
-          var extentString = JSON.stringify(this.map.extent.toJson());
-          var string = '{"id":' + idString + ', "extent":' + extentString + '}';
-          // Store a cookie
-          cookie(this.cookie, string, {
-            expires: 24
-          });
-          console.log("wrote credentials");
-        }
+        // Serialize to a string
+        var idString = JSON.stringify(esri.id.toJson());
+        var extentString = JSON.stringify(this.map.extent.toJson());
+        var string = "{'id':" + idString + ", 'extent':" + extentString + "}";
+        // Store a cookie
+        cookie(this.cookie, string, {
+          expires: 24
+        });
+        console.log("wrote credentials");
 
       },
 

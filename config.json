@@ -9,15 +9,6 @@
   "contributorUrl": "http://gfx.esri.ca/arcgis/rest/services/Communities/Contributors",
   "imageryLayerUrl": "http://server.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer",
   "editor": {
-    "createOptions": {
-      "polylineDrawTools": [
-        "freehandpolyline"
-      ],
-      "polygonDrawTools": [
-        "freehandpolygon",
-        "autocomplete"
-      ]
-    },
     "enableUndoRedo": true,
     "toolbarVisible": true,
     "toolbarOptions": {
@@ -25,7 +16,6 @@
       "cutVisible": true,
       "reshapeVisible": true
     }
-
   },
   "commentGraphic": {
     "colour": "black",
