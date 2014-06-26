@@ -183,7 +183,6 @@ define(
           if (dom.byId("attachmentDiv")) {
             dom.byId("attachmentDiv").innerHTML = "";
           }
-          // domStyle.set(dom.byId("submitConversation"), "display", "none");
         }));
         // Resize infoWindow
         // this.map.infoWindow.resize(300, 700);
@@ -496,37 +495,23 @@ define(
             "innerHTML": this.nls.commentSubmit
           }, dom.byId("editorButtons"));
 
-          // var editCancel = domConstruct.create("div", {
-          //   "class": "jimu-btn commentButton editorButtons",
-          //   "innerHTML": this.nls.cancel
-          // }, dom.byId("editorButtons"));
-          // this.editorProp = false;
+          var editCancel = domConstruct.create("div", {
+            "class": "jimu-btn commentButton editorButtons",
+            "innerHTML": this.nls.cancel
+          }, dom.byId("editorButtons"));
 
           this.editorProp = true;
 
-          var ook = on(editOK, "click", lang.hitch(this, function() {
+          this.ook = on(editOK, "click", lang.hitch(this, function() {
+            this.editorProp = false;
+            $(".editorButtons").forEach(domConstruct.destroy);
             this.map.infoWindow.hide();
-            // $(".editorButtons").forEach(domConstruct.destroy);
-            ook.remove();
           }));
 
-          // var ocan = on(editCancel, "click", lang.hitch(this, function() {
-          //   this.map.infoWindow.hide();
-          //   ocan.remove();
-          // }));
-
-          aspect.after(this.map.infoWindow, "hide", lang.hitch(this, function() {
-            if (this.editorProp) {
-              $(".editorButtons").forEach(domConstruct.destroy);
-              this.editorProp = false;
-              ook.remove();
-              // event.stop(e);
-            }
+          this.ocan = on(editCancel, "click", lang.hitch(this, function() {
+            this.map.infoWindow.hide();
           }));
-
-
         }
-
 
       },
 
@@ -882,7 +867,10 @@ define(
             layer = new FeatureLayer(featureLayer.url, featureLayer.options);
             // console.log(layer);
             // console.log(this.credential);
-            layer.on("before-apply-edits", lang.hitch(this, this.showSpinner));
+            layer.on("before-apply-edits", lang.hitch(this, function(adds, updates, deletes) {
+              this.showSpinner();
+              this.stopEdits(adds, updates, deletes, layer);
+            }));
             layer.on("edits-complete", lang.hitch(this, this.editsCompleteHandler));
             //layer.on("graphic-add", lang.hitch(this,this.graphicAddHandler));
             layer.setDefinitionExpression("Creator = '" + this.credential.userId + "'");
@@ -1380,22 +1368,19 @@ define(
 
       },
 
-      queryConversation: function(div, oid) { //feature
-
+      queryConversation: function(div, oid) {
 
         if (!this.commentLayer) {
           this.commentLayer = new FeatureLayer(this.agolUser.conversationUrl);
         }
 
-        var where = "obs_guid = '" + oid + "'";
         var query = new Query();
+        var where = "obs_guid = '" + oid + "'";
         query.where = where;
-
-        // var field = "globalid";
         var fields = ["*"];
-        var queryTask = new QueryTask(this.commentLayer.url);
-        query.returnGeometry = false;
         query.outFields = fields;
+        query.returnGeometry = false;
+        var queryTask = new QueryTask(this.commentLayer.url);
 
         queryTask.execute(query).then(lang.hitch(this, function(result) {
 
@@ -2204,6 +2189,23 @@ define(
           // $(".spinner").forEach(domConstruct.destroy);
           this.loading.hide();
           this.spinnerVisible = false;
+        }
+
+      },
+
+      stopEdits: function(adds, updates, deletes, layer) {
+
+        if (this.editorProp && adds) {
+          this.hideSpinner();
+          $(".editorButtons").forEach(domConstruct.destroy);
+          this.editorProp = false;
+          this.ook.remove();
+          this.ocan.remove();
+          layer.clearSelection();
+          var gLayer = this.editor.attributeInspector._currentFeature._graphicsLayer;
+          gLayer.clear();
+          gLayer.refresh();
+          throw new Error();
         }
 
       }
