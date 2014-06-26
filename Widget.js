@@ -470,7 +470,7 @@ define(
           }));
         } else {
           console.log("queryConversation");
-          this.queryConversation(commentDiv); //this.editor.attributeInspector._currentFeature);
+          this.getGlobalId(commentDiv); //this.editor.attributeInspector._currentFeature);
         }
 
       },
@@ -882,6 +882,7 @@ define(
             layer = new FeatureLayer(featureLayer.url, featureLayer.options);
             // console.log(layer);
             // console.log(this.credential);
+            layer.on("before-apply-edits", lang.hitch(this, this.showSpinner));
             layer.on("edits-complete", lang.hitch(this, this.editsCompleteHandler));
             //layer.on("graphic-add", lang.hitch(this,this.graphicAddHandler));
             layer.setDefinitionExpression("Creator = '" + this.credential.userId + "'");
@@ -920,7 +921,7 @@ define(
 
       editsCompleteHandler: function(result) {
 
-        // console.log(result);
+        this.hideSpinner();
         if (result.adds.length > 0) {
 
           console.log("OID: " + result.adds[0].objectId);
@@ -973,7 +974,7 @@ define(
         };
         console.log(printTask);
         aspect.after(printTask, "onComplete", lang.hitch(this, this.printSuccessful), true);
-        //aspect.after(printTask, 'onError', lang.hitch(this, this.submitError),true);
+        // aspect.after(printTask, 'onError', lang.hitch(this, this.submitError), true);
         printTask.execute(params);
 
       },
@@ -1346,9 +1347,42 @@ define(
 
       },
 
-      queryConversation: function(div) { //feature
+      getGlobalId: function(div) {
 
-        var oid = this.editor.attributeInspector._currentFeature.attributes.globalid;
+        // After feature creation, sometimes globalid is not assigned
+        var oid;
+        var curFeature = this.editor.attributeInspector._currentFeature;
+        oid = curFeature.attributes.globalid;
+        if (!oid) {
+          var curLayer;
+          if (curFeature.geometry.type === "point") {
+            curLayer = this.agolUser.layerInfos[0].featureLayer;
+          } else if (curFeature.geometry.type === "polyline") {
+            curLayer = this.agolUser.layerInfos[1].featureLayer;
+          } else {
+            curLayer = this.agolUser.layerInfos[2].featureLayer;
+          }
+          var query = new Query();
+          var where = "objectid = '" + curFeature.attributes.objectid + "'";
+          query.where = where;
+          var fields = ["globalid"];
+          query.outFields = fields;
+          query.returnGeometry = false;
+          var queryTask = new QueryTask(curLayer.url);
+          queryTask.execute(query).then(lang.hitch(this, function(result) {
+            oid = result.features[0].attributes.globalid;
+            curFeature.attributes.globalid = oid;
+            this.queryConversation(div, oid);
+          }));
+        } else {
+          this.queryConversation(div, oid);
+        }
+
+      },
+
+      queryConversation: function(div, oid) { //feature
+
+
         if (!this.commentLayer) {
           this.commentLayer = new FeatureLayer(this.agolUser.conversationUrl);
         }
@@ -1445,10 +1479,10 @@ define(
         featureLayer.applyEdits([commentRecord], null, null).then(lang.hitch(this, function(result) {
           console.log(result);
           this.hideSpinner();
-          this.queryConversation();
+          // this.queryConversation();
         }));
 
-        var commentUrl = this.config.feedbackUrl + "/Comment?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&obsguid=" + curFeature.attributes.globalid;
+        // var commentUrl = this.config.feedbackUrl + "/Comment?username=" + this.credential.userId + "&access_token=" + this.credential.token + "&obstype=Observation" + curFeature.geometry.type + "&obsid=" + curFeature.attributes.objectid + "&obsguid=" + curFeature.attributes.globalid;
 
         // !!! Remove for now as Comment service hasn't been configured !!!
         // var changeRequest = esriRequest({
@@ -1794,7 +1828,7 @@ define(
 
         var layer = this.editor.attributeInspector._currentFeature._graphicsLayer;
         this.refreshFeedbackLayer(layer);
-        console.log('success');
+        console.log("success");
         // var title = "Feedback status submitted";
         // var message = "Feedback status submitted.";
         // if (!registry.byId("feedbackStatusDialog")) {
@@ -2115,8 +2149,6 @@ define(
               this.map.setExtent(extentObject);
             }
           }
-        } else {
-          console.log("no credentials to load");
         }
 
       },
@@ -2139,7 +2171,6 @@ define(
         cookie(this.cookie, string, {
           expires: 24
         });
-        console.log("wrote credentials");
 
       },
 
